@@ -288,3 +288,7 @@
 	url = https://github.com/matter-mtk/genio-matter-lwip.git
 	branch = main
 	platforms = genio
+[submodule "third_party/libtrusty/repo"]
+	path = third_party/libtrusty/repo
+	url = http://androidsource.ap.freescale.net/project/platform/libtrusty
+	branch = master
