@@ -47,6 +47,8 @@ esp32-m5stack-all-clusters
 esp32-m5stack-all-clusters-ipv6only
 esp32-m5stack-all-clusters-rpc
 esp32-m5stack-all-clusters-rpc-ipv6only
+esp32-m5stack-ota-requestor
+esp32-m5stack-ota-requestor-rpc
 esp32-qemu-tests
 imx-all-clusters-app
 imx-all-clusters-app-release
