@@ -579,6 +579,28 @@ bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh;
 export SDKCONFIG_DEFAULTS={out}/esp32-devkitc-lock/sdkconfig.defaults
 idf.py -C examples/lock-app/esp32 -B {out}/esp32-devkitc-lock reconfigure'
 
+# Generating esp32-devkitc-ota-requestor
+mkdir -p {out}/esp32-devkitc-ota-requestor
+
+cp examples/ota-requestor-app/esp32/sdkconfig.defaults {out}/esp32-devkitc-ota-requestor/sdkconfig.defaults
+
+rm -f examples/ota-requestor-app/esp32/sdkconfig
+
+bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
+export SDKCONFIG_DEFAULTS={out}/esp32-devkitc-ota-requestor/sdkconfig.defaults
+idf.py -C examples/ota-requestor-app/esp32 -B {out}/esp32-devkitc-ota-requestor reconfigure'
+
+# Generating esp32-devkitc-ota-requestor-rpc
+mkdir -p {out}/esp32-devkitc-ota-requestor-rpc
+
+cp examples/ota-requestor-app/esp32/sdkconfig_rpc.defaults {out}/esp32-devkitc-ota-requestor-rpc/sdkconfig.defaults
+
+rm -f examples/ota-requestor-app/esp32/sdkconfig
+
+bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
+export SDKCONFIG_DEFAULTS={out}/esp32-devkitc-ota-requestor-rpc/sdkconfig.defaults
+idf.py -C examples/ota-requestor-app/esp32 -B {out}/esp32-devkitc-ota-requestor-rpc reconfigure'
+
 # Generating esp32-devkitc-shell
 mkdir -p {out}/esp32-devkitc-shell
 
@@ -659,6 +681,28 @@ bash -c 'echo -e "\nCONFIG_DISABLE_IPV4=y\n" >>{out}/esp32-m5stack-all-clusters-
 bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
 export SDKCONFIG_DEFAULTS={out}/esp32-m5stack-all-clusters-rpc-ipv6only/sdkconfig.defaults
 idf.py -C examples/all-clusters-app/esp32 -B {out}/esp32-m5stack-all-clusters-rpc-ipv6only reconfigure'
+
+# Generating esp32-m5stack-ota-requestor
+mkdir -p {out}/esp32-m5stack-ota-requestor
+
+cp examples/ota-requestor-app/esp32/sdkconfig_m5stack.defaults {out}/esp32-m5stack-ota-requestor/sdkconfig.defaults
+
+rm -f examples/ota-requestor-app/esp32/sdkconfig
+
+bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
+export SDKCONFIG_DEFAULTS={out}/esp32-m5stack-ota-requestor/sdkconfig.defaults
+idf.py -C examples/ota-requestor-app/esp32 -B {out}/esp32-m5stack-ota-requestor reconfigure'
+
+# Generating esp32-m5stack-ota-requestor-rpc
+mkdir -p {out}/esp32-m5stack-ota-requestor-rpc
+
+cp examples/ota-requestor-app/esp32/sdkconfig_m5stack_rpc.defaults {out}/esp32-m5stack-ota-requestor-rpc/sdkconfig.defaults
+
+rm -f examples/ota-requestor-app/esp32/sdkconfig
+
+bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
+export SDKCONFIG_DEFAULTS={out}/esp32-m5stack-ota-requestor-rpc/sdkconfig.defaults
+idf.py -C examples/ota-requestor-app/esp32 -B {out}/esp32-m5stack-ota-requestor-rpc reconfigure'
 
 # Generating esp32-qemu-tests
 mkdir -p {out}/esp32-qemu-tests
@@ -1657,6 +1701,20 @@ bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh;
 export SDKCONFIG_DEFAULTS={out}/esp32-devkitc-lock/sdkconfig.defaults
 idf.py -C examples/lock-app/esp32 -B {out}/esp32-devkitc-lock build'
 
+rm -f examples/ota-requestor-app/esp32/sdkconfig
+
+# Building esp32-devkitc-ota-requestor
+bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
+export SDKCONFIG_DEFAULTS={out}/esp32-devkitc-ota-requestor/sdkconfig.defaults
+idf.py -C examples/ota-requestor-app/esp32 -B {out}/esp32-devkitc-ota-requestor build'
+
+rm -f examples/ota-requestor-app/esp32/sdkconfig
+
+# Building esp32-devkitc-ota-requestor-rpc
+bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
+export SDKCONFIG_DEFAULTS={out}/esp32-devkitc-ota-requestor-rpc/sdkconfig.defaults
+idf.py -C examples/ota-requestor-app/esp32 -B {out}/esp32-devkitc-ota-requestor-rpc build'
+
 rm -f examples/shell/esp32/sdkconfig
 
 # Building esp32-devkitc-shell
@@ -1705,6 +1763,20 @@ rm -f examples/all-clusters-app/esp32/sdkconfig
 bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
 export SDKCONFIG_DEFAULTS={out}/esp32-m5stack-all-clusters-rpc-ipv6only/sdkconfig.defaults
 idf.py -C examples/all-clusters-app/esp32 -B {out}/esp32-m5stack-all-clusters-rpc-ipv6only build'
+
+rm -f examples/ota-requestor-app/esp32/sdkconfig
+
+# Building esp32-m5stack-ota-requestor
+bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
+export SDKCONFIG_DEFAULTS={out}/esp32-m5stack-ota-requestor/sdkconfig.defaults
+idf.py -C examples/ota-requestor-app/esp32 -B {out}/esp32-m5stack-ota-requestor build'
+
+rm -f examples/ota-requestor-app/esp32/sdkconfig
+
+# Building esp32-m5stack-ota-requestor-rpc
+bash -c 'source $IDF_PATH/export.sh; source scripts/activate.sh; 
+export SDKCONFIG_DEFAULTS={out}/esp32-m5stack-ota-requestor-rpc/sdkconfig.defaults
+idf.py -C examples/ota-requestor-app/esp32 -B {out}/esp32-m5stack-ota-requestor-rpc build'
 
 rm -f src/test_driver/esp32/sdkconfig
 
