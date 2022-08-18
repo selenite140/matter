@@ -54,15 +54,24 @@ K32W0FactoryDataProvider & K32W0FactoryDataProvider::GetDefaultInstance()
     return sInstance;
 }
 
-constexpr size_t kVerifierId = 1;
-constexpr size_t kSaltId = 2;
-constexpr size_t kIcId = 3;
-constexpr size_t kDacPrivateKeyId= 4;
-constexpr size_t kDacCertificateId = 5;
-constexpr size_t kPaiCertificateId = 6;
-constexpr size_t kDiscriminatorId = 7;
-constexpr size_t kMaxCertLen = 600;
-constexpr size_t kMaxKeyLen = 32;
+static constexpr size_t kSpake2pSerializedVerifier_MaxBase64Len =
+    BASE64_ENCODED_LEN(chip::Crypto::kSpake2p_VerifierSerialized_Length) + 1;
+static constexpr size_t kSpake2pSalt_MaxBase64Len =
+    BASE64_ENCODED_LEN(chip::Crypto::kSpake2p_Max_PBKDF_Salt_Length) + 1;
+static constexpr size_t kMaxCertLen = 600;
+static constexpr size_t kMaxKeyLen = 32;
+
+static constexpr size_t kVerifierId = 1;
+static constexpr size_t kSaltId = 2;
+static constexpr size_t kIcId = 3;
+static constexpr size_t kDacPrivateKeyId = 4;
+static constexpr size_t kDacCertificateId = 5;
+static constexpr size_t kPaiCertificateId = 6;
+static constexpr size_t kDiscriminatorId = 7;
+
+static constexpr size_t kMaxId = kDiscriminatorId;
+
+static uint16_t maxLengths[kMaxId + 1];
 
 /* Structure of data in binary:
  * Type   - 1 Byte
@@ -82,6 +91,11 @@ CHIP_ERROR SearchForId(uint8_t searchedType, uint8_t *pBuf, size_t bufLength, ui
     {
         type = *((uint8_t *)addr);
         memcpy(&length, (uint8_t *)(addr + 1), 2);
+
+        if ((type > kMaxId) || (length > maxLengths[type]))
+        {
+            return CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND;
+        }
 
         if (searchedType == type)
         {
@@ -108,6 +122,14 @@ CHIP_ERROR SearchForId(uint8_t searchedType, uint8_t *pBuf, size_t bufLength, ui
 
 CHIP_ERROR K32W0FactoryDataProvider::Init()
 {
+	maxLengths[kVerifierId]       = kSpake2pSerializedVerifier_MaxBase64Len;
+	maxLengths[kSaltId]           = kSpake2pSalt_MaxBase64Len;
+	maxLengths[kIcId]             = 4;
+	maxLengths[kDacPrivateKeyId]  = kMaxKeyLen;
+	maxLengths[kDacCertificateId] = kMaxCertLen;
+	maxLengths[kPaiCertificateId] = kMaxCertLen;
+	maxLengths[kDiscriminatorId]  = 4;
+
     return CHIP_NO_ERROR;
 }
 
@@ -202,7 +224,6 @@ CHIP_ERROR K32W0FactoryDataProvider::GetSpake2pIterationCount(uint32_t & iterati
 
 CHIP_ERROR K32W0FactoryDataProvider::GetSpake2pSalt(MutableByteSpan & saltBuf)
 {
-    static constexpr size_t kSpake2pSalt_MaxBase64Len = BASE64_ENCODED_LEN(chip::Crypto::kSpake2p_Max_PBKDF_Salt_Length) + 1;
     char saltB64[kSpake2pSalt_MaxBase64Len] = { 0 };
     uint16_t saltB64Len                     = 0;
 
@@ -218,8 +239,6 @@ CHIP_ERROR K32W0FactoryDataProvider::GetSpake2pSalt(MutableByteSpan & saltBuf)
 
 CHIP_ERROR K32W0FactoryDataProvider::GetSpake2pVerifier(MutableByteSpan & verifierBuf, size_t & verifierLen)
 {
-    static constexpr size_t kSpake2pSerializedVerifier_MaxBase64Len =
-        BASE64_ENCODED_LEN(chip::Crypto::kSpake2p_VerifierSerialized_Length) + 1;
     char verifierB64[kSpake2pSerializedVerifier_MaxBase64Len] = { 0 };
     uint16_t verifierB64Len                                   = 0;
     ReturnErrorOnFailure(SearchForId(kVerifierId, (uint8_t*)&verifierB64[0], sizeof(verifierB64), verifierB64Len));
