@@ -26,6 +26,8 @@
 #include <lib/core/CHIPTLV.h>
 #include <lib/support/Base64.h>
 #include <lib/support/Span.h>
+#include "OtaUtils.h"
+#include "fsl_flash.h"
 
 #include "K32W0FactoryDataProvider.h"
 
@@ -72,29 +74,37 @@ static constexpr size_t kDiscriminatorId = 7;
 static constexpr size_t kMaxId = kDiscriminatorId;
 
 static uint16_t maxLengths[kMaxId + 1];
+static uint32_t factoryDataActualSize = 0;
 
-/* Structure of data in binary:
- * Type   - 1 Byte
- * Length - 2 Bytes
- * Value  - Length Bytes
- */
+typedef otaUtilsResult_t (*OtaUtils_EEPROM_ReadData)(uint16_t nbBytes,
+                                                     uint32_t address,
+                                                     uint8_t *pInbuf);
+
+static uint8_t ReadDataMemCpy(uint16_t num, uint32_t src, uint8_t *dst)
+{
+    memcpy(dst, (void*)(src), num);
+    return 0;
+}
 
 CHIP_ERROR SearchForId(uint8_t searchedType, uint8_t *pBuf, size_t bufLength, uint16_t & length)
 {
     CHIP_ERROR err = CHIP_ERROR_NOT_FOUND;
+    uint32_t factoryDataStartAddress = (uint32_t)__FACTORY_DATA_START;
+    uint32_t addr = factoryDataStartAddress;
+    OtaUtils_EEPROM_ReadData pFunctionEepromRead = (OtaUtils_EEPROM_ReadData)ReadDataMemCpy;
     uint8_t type = 0;
-    uint32_t addr = (uint32_t)__FACTORY_DATA_START;
-    uint32_t factoryDataAddress = (uint32_t)__FACTORY_DATA_START;
-    uint32_t factoryDataSize = (uint32_t)__FACTORY_DATA_SIZE;
 
-    while (addr < (factoryDataAddress + factoryDataSize))
+    while (addr < (factoryDataStartAddress + (uint32_t)__FACTORY_DATA_SIZE))
     {
-        type = *((uint8_t *)addr);
-        memcpy(&length, (uint8_t *)(addr + 1), 2);
+        if (gOtaUtilsSuccess_c !=
+                OtaUtils_ReadFromInternalFlash(sizeof(type), addr, (uint8_t*)&type, NULL, pFunctionEepromRead) ||
+            gOtaUtilsSuccess_c !=
+                OtaUtils_ReadFromInternalFlash(sizeof(length), addr + 1, (uint8_t*)&length, NULL, pFunctionEepromRead))
+        	break;
 
         if ((type > kMaxId) || (length > maxLengths[type]))
         {
-            return CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND;
+            break;
         }
 
         if (searchedType == type)
@@ -105,7 +115,10 @@ CHIP_ERROR SearchForId(uint8_t searchedType, uint8_t *pBuf, size_t bufLength, ui
             }
             else
             {
-                memcpy(pBuf, (uint8_t *)(addr + 3), length);
+                if (gOtaUtilsSuccess_c !=
+                    OtaUtils_ReadFromInternalFlash(length, addr + 3, pBuf, NULL, pFunctionEepromRead))
+                break;
+
                 err = CHIP_NO_ERROR;
             }
             break;
@@ -122,6 +135,7 @@ CHIP_ERROR SearchForId(uint8_t searchedType, uint8_t *pBuf, size_t bufLength, ui
 
 CHIP_ERROR K32W0FactoryDataProvider::Init()
 {
+
 	maxLengths[kVerifierId]       = kSpake2pSerializedVerifier_MaxBase64Len;
 	maxLengths[kSaltId]           = kSpake2pSalt_MaxBase64Len;
 	maxLengths[kIcId]             = 4;
