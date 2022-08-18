@@ -419,14 +419,14 @@ Here is the interpretation of the fields:
 Second, image directory 1 must be written:
 
 ```
-DK6Programmer.exe -V5 -s <COM port> -P 1000000 -w image_dir_1=00400000CD040101
+DK6Programmer.exe -V5 -s <COM port> -P 1000000 -w image_dir_1=00400000C9040101
 ```
 
 Here is the interpretation of the fields:
 
 ```
 00400000 -> start address 0x00004000
-CD04     -> 0x4CD pages of 512-bytes (= 614,5kB)
+CD04     -> 0x4C9 pages of 512-bytes (= 612,5kB)
 01       -> bootable flag
 01       -> image type for the application
 ```
