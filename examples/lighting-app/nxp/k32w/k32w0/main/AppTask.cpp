@@ -27,6 +27,7 @@
 #include <lib/support/ThreadOperationalDataset.h>
 #include <platform/CHIPDeviceLayer.h>
 #include <platform/internal/DeviceNetworkInfo.h>
+#include <src/platform/nxp/k32w/k32w0/DefaultTestEventTriggerDelegate.h>
 #include <DeviceInfoProviderImpl.h>
 #include <inet/EndPointStateOpenThread.h>
 
@@ -85,6 +86,11 @@ using namespace ::chip::DeviceLayer;
 using namespace chip;
 
 AppTask AppTask::sAppTask;
+
+// This key is for testing/certification only and should not be used in production devices.
+// For production devices this key must be provided from factory data.
+uint8_t sTestEventTriggerEnableKey[TestEventTriggerDelegate::kEnableKeyLength] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+                                                                                   0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
 
 static Identify gIdentify = {
     chip::EndpointId{1},
@@ -226,6 +232,8 @@ void AppTask::InitServer(intptr_t arg)
     chip::DeviceLayer::SetDeviceInfoProvider(&infoProvider);
 
     // Init ZCL Data Model and start server
+    static DefaultTestEventTriggerDelegate testEventTriggerDelegate{ ByteSpan(sTestEventTriggerEnableKey) };
+    initParams.testEventTriggerDelegate = &testEventTriggerDelegate;
     chip::Inet::EndPointStateOpenThread::OpenThreadEndpointInitParam nativeParams;
     nativeParams.lockCb                = LockOpenThreadTask;
     nativeParams.unlockCb              = UnlockOpenThreadTask;
