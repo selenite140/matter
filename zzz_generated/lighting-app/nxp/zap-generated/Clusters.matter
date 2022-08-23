@@ -189,7 +189,7 @@ server cluster LevelControl = 8 {
     kFrequency = 0x4;
   }
 
-  readonly nosubscribe attribute int8u currentLevel = 0;
+  readonly attribute nullable int8u currentLevel = 0;
   readonly attribute int16u remainingTime = 1;
   readonly attribute int8u minLevel = 2;
   readonly attribute int8u maxLevel = 3;
@@ -204,14 +204,14 @@ server cluster LevelControl = 8 {
 
   request struct MoveToLevelRequest {
     INT8U level = 0;
-    INT16U transitionTime = 1;
+    nullable INT16U transitionTime = 1;
     BITMAP8 optionsMask = 2;
     BITMAP8 optionsOverride = 3;
   }
 
   request struct MoveRequest {
     MoveMode moveMode = 0;
-    INT8U rate = 1;
+    nullable INT8U rate = 1;
     BITMAP8 optionsMask = 2;
     BITMAP8 optionsOverride = 3;
   }
@@ -219,7 +219,7 @@ server cluster LevelControl = 8 {
   request struct StepRequest {
     StepMode stepMode = 0;
     INT8U stepSize = 1;
-    INT16U transitionTime = 2;
+    nullable INT16U transitionTime = 2;
     BITMAP8 optionsMask = 3;
     BITMAP8 optionsOverride = 4;
   }
@@ -231,14 +231,14 @@ server cluster LevelControl = 8 {
 
   request struct MoveToLevelWithOnOffRequest {
     INT8U level = 0;
-    INT16U transitionTime = 1;
+    nullable INT16U transitionTime = 1;
     BITMAP8 optionsMask = 2;
     BITMAP8 optionsOverride = 3;
   }
 
   request struct MoveWithOnOffRequest {
     MoveMode moveMode = 0;
-    INT8U rate = 1;
+    nullable INT8U rate = 1;
     BITMAP8 optionsMask = 2;
     BITMAP8 optionsOverride = 3;
   }
@@ -246,7 +246,7 @@ server cluster LevelControl = 8 {
   request struct StepWithOnOffRequest {
     StepMode stepMode = 0;
     INT8U stepSize = 1;
-    INT16U transitionTime = 2;
+    nullable INT16U transitionTime = 2;
     BITMAP8 optionsMask = 3;
     BITMAP8 optionsOverride = 4;
   }
@@ -318,11 +318,6 @@ server cluster AccessControl = 31 {
     nullable devtype_id deviceType = 2;
   }
 
-  struct ExtensionEntry {
-    octet_string<128> data = 1;
-    fabric_idx fabricIndex = 254;
-  }
-
   info event access(read: administer) AccessControlEntryChanged = 0 {
     nullable node_id adminNodeID = 1;
     nullable INT16U adminPasscodeID = 2;
@@ -340,7 +335,6 @@ server cluster AccessControl = 31 {
   }
 
   attribute access(read: administer, write: administer) AccessControlEntry acl[] = 0;
-  attribute access(read: administer, write: administer) ExtensionEntry extension[] = 1;
   readonly attribute int16u subjectsPerAccessControlEntry = 2;
   readonly attribute int16u targetsPerAccessControlEntry = 3;
   readonly attribute int16u accessControlEntriesPerFabric = 4;
@@ -381,14 +375,6 @@ server cluster Basic = 40 {
   readonly attribute char_string<64> hardwareVersionString = 8;
   readonly attribute int32u softwareVersion = 9;
   readonly attribute char_string<64> softwareVersionString = 10;
-  readonly attribute char_string<16> manufacturingDate = 11;
-  readonly attribute char_string<32> partNumber = 12;
-  readonly attribute long_char_string<256> productURL = 13;
-  readonly attribute char_string<64> productLabel = 14;
-  readonly attribute char_string<32> serialNumber = 15;
-  attribute access(write: manage) boolean localConfigDisabled = 16;
-  readonly attribute boolean reachable = 17;
-  readonly attribute char_string<32> uniqueID = 18;
   readonly attribute CapabilityMinimaStruct capabilityMinima = 19;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -797,12 +783,6 @@ server cluster GeneralDiagnostics = 51 {
 
   readonly attribute NetworkInterfaceType networkInterfaces[] = 0;
   readonly attribute int16u rebootCount = 1;
-  readonly attribute int64u upTime = 2;
-  readonly attribute int32u totalOperationalHours = 3;
-  readonly attribute enum8 bootReasons = 4;
-  readonly attribute ENUM8 activeHardwareFaults[] = 5;
-  readonly attribute ENUM8 activeRadioFaults[] = 6;
-  readonly attribute ENUM8 activeNetworkFaults[] = 7;
   readonly attribute boolean testEventTriggersEnabled = 8;
   readonly attribute bitmap32 featureMap = 65532;
   readonly attribute int16u clusterRevision = 65533;
@@ -989,11 +969,8 @@ server cluster ThreadNetworkDiagnostics = 53 {
   readonly attribute int32u rxErrSecCount = 53;
   readonly attribute int32u rxErrFcsCount = 54;
   readonly attribute int32u rxErrOtherCount = 55;
-  readonly attribute nullable int64u activeTimestamp = 56;
-  readonly attribute nullable int64u pendingTimestamp = 57;
-  readonly attribute nullable int32u delay = 58;
   readonly attribute nullable SecurityPolicy securityPolicy = 59;
-  readonly attribute nullable octet_string<4> channelMask = 60;
+  readonly attribute nullable octet_string<4> channelPage0Mask = 60;
   readonly attribute nullable OperationalDatasetComponents operationalDatasetComponents = 61;
   readonly attribute NetworkFault activeNetworkFaultsList[] = 62;
   readonly attribute bitmap32 featureMap = 65532;
@@ -1010,12 +987,12 @@ server cluster AdministratorCommissioning = 60 {
   }
 
   enum StatusCode : ENUM8 {
-    kBusy = 1;
-    kPAKEParameterError = 2;
-    kWindowNotOpen = 3;
+    kBusy = 2;
+    kPAKEParameterError = 3;
+    kWindowNotOpen = 4;
   }
 
-  readonly attribute int8u windowStatus = 0;
+  readonly attribute CommissioningWindowStatus windowStatus = 0;
   readonly attribute nullable fabric_idx adminFabricIndex = 1;
   readonly attribute nullable int16u adminVendorId = 2;
   readonly attribute bitmap32 featureMap = 65532;
@@ -1353,7 +1330,7 @@ endpoint 0 {
     callback attribute rxErrFcsCount;
     callback attribute rxErrOtherCount;
     callback attribute securityPolicy;
-    callback attribute channelMask;
+    callback attribute channelPage0Mask;
     callback attribute operationalDatasetComponents;
     callback attribute activeNetworkFaultsList;
     ram      attribute featureMap default = 0x000F;
@@ -1429,7 +1406,7 @@ endpoint 1 {
     ram      attribute minLevel default = 0x01;
     ram      attribute maxLevel default = 0xFE;
     ram      attribute options;
-    ram      attribute onLevel default = 0XFE;
+    ram      attribute onLevel;
     persist  attribute startUpCurrentLevel default = 254;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
