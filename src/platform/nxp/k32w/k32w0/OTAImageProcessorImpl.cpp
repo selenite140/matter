@@ -283,7 +283,6 @@ void OTAImageProcessorImpl::HandleApply(intptr_t context)
         if (CHIP_NO_ERROR == K32WConfig::WriteConfigValueSync(K32WConfig::kConfigKey_FirstRunOfOTAImage, firstRun))
         {
             /* Set the necessary information to inform the SSBL that a new image is available */
-            DeviceLayer::ConfigurationMgr().StoreSoftwareVersion(imageProcessor->mSoftwareVersion);
             OTA_SetNewImageFlag();
             ChipLogProgress(SoftwareUpdate, "OTA image authentication success. Device will reboot with the new image!");
             ResetMCU();
