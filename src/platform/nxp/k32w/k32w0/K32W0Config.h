@@ -116,7 +116,7 @@ public:
 
     // Configuration methods used by the GenericConfigurationManagerImpl<> template.
     template <typename TValue>
-    static CHIP_ERROR ReadConfigValue(Key key, TValue val);
+    static CHIP_ERROR ReadConfigValue(Key key, TValue val, uint16_t valLen);
     template <typename TValue>
     static CHIP_ERROR WriteConfigValue(Key key, TValue val);
     template <typename TValue>
@@ -169,16 +169,13 @@ inline constexpr uint8_t K32WConfig::GetRecordKey(Key key)
 }
 
 template <typename TValue>
-CHIP_ERROR K32WConfig::ReadConfigValue(Key key, TValue val)
+CHIP_ERROR K32WConfig::ReadConfigValue(Key key, TValue val, uint16_t valLen)
 {
     CHIP_ERROR err;
-    TValue tempVal;
-    uint16_t sizeToRead = sizeof(tempVal);
 
     VerifyOrExit(ValidConfigKey(key), err = CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND);
-    err = RamStorage::Read(key, 0, (uint8_t*)&tempVal, &sizeToRead);
+    err = RamStorage::Read(key, 0, (uint8_t*)val, &valLen);
     SuccessOrExit(err);
-    val = tempVal;
 
 exit:
     return err;

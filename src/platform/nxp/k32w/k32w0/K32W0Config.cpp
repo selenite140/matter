@@ -105,7 +105,7 @@ CHIP_ERROR K32WConfig::ReadConfigValueBin(Key key, uint8_t * buf, size_t bufSize
 CHIP_ERROR K32WConfig::ReadConfigValueCounter(uint8_t counterIdx, uint32_t & val)
 {
     Key key = kMinConfigKey_ChipCounter + counterIdx;
-    return ReadConfigValue(key, val);
+    return ReadConfigValue(key, val, sizeof(uint32_t));
 }
 
 CHIP_ERROR K32WConfig::WriteConfigValueStr(Key key, const char * str)

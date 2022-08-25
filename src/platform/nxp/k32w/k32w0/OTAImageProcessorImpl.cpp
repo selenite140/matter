@@ -213,7 +213,7 @@ bool OTAImageProcessorImpl::IsFirstImageRun()
 {
     bool firstRun = false;
 
-    if (CHIP_NO_ERROR == K32WConfig::ReadConfigValue(K32WConfig::kConfigKey_FirstRunOfOTAImage, firstRun))
+    if (CHIP_NO_ERROR == K32WConfig::ReadConfigValue(K32WConfig::kConfigKey_FirstRunOfOTAImage, &firstRun, sizeof(bool)))
     {
         return firstRun;
     }

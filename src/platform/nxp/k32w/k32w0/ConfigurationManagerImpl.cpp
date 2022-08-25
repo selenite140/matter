@@ -193,17 +193,17 @@ exit:
 
 CHIP_ERROR ConfigurationManagerImpl::ReadConfigValue(Key key, bool & val)
 {
-    return K32WConfig::ReadConfigValue(key, val);
+    return K32WConfig::ReadConfigValue(key, val, sizeof(bool));
 }
 
 CHIP_ERROR ConfigurationManagerImpl::ReadConfigValue(Key key, uint32_t & val)
 {
-    return K32WConfig::ReadConfigValue(key, val);
+    return K32WConfig::ReadConfigValue(key, val, sizeof(uint32_t));
 }
 
 CHIP_ERROR ConfigurationManagerImpl::ReadConfigValue(Key key, uint64_t & val)
 {
-    return K32WConfig::ReadConfigValue(key, val);
+    return K32WConfig::ReadConfigValue(key, val, sizeof(uint64_t));
 }
 
 CHIP_ERROR ConfigurationManagerImpl::ReadConfigValueStr(Key key, char * buf, size_t bufSize, size_t & outLen)
