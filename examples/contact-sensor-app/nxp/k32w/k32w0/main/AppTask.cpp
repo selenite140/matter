@@ -817,7 +817,7 @@ void AppTask::UpdateClusterState(void)
 {
     PlatformMgr().ScheduleWork(UpdateClusterStateInternal, 0);
 }
-
+extern void logBooleanStateEvent(bool state);
 void AppTask::UpdateClusterStateInternal(intptr_t arg)
 {
     uint8_t newValue = ContactSensorMgr().IsContactClosed();
@@ -829,6 +829,7 @@ void AppTask::UpdateClusterStateInternal(intptr_t arg)
     {
         ChipLogError(NotSpecified, "ERR: updating boolean status value %x", status);
     }
+    logBooleanStateEvent(newValue);
 }
 
 void AppTask::UpdateDeviceState(void)

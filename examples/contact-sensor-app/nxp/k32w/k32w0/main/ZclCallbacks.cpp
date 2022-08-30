@@ -23,12 +23,15 @@
 
 #include <app-common/zap-generated/ids/Attributes.h>
 #include <app-common/zap-generated/ids/Clusters.h>
+#include <app/EventLogging.h>
 #include <app/ConcreteAttributePath.h>
 #include <app/util/af-types.h>
 #include <app/util/af.h>
 
 using namespace ::chip;
+using namespace ::chip::app;
 using namespace ::chip::app::Clusters;
+using namespace ::chip::app::Clusters::BooleanState;
 
 void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & path, uint8_t type, uint16_t size, uint8_t * value)
 {
@@ -79,4 +82,14 @@ void emberAfBooleanStateClusterInitCallback(EndpointId endpoint)
 {
     ChipLogProgress(Zcl, "emberAfBooleanStateClusterInitCallback\n");
     GetAppTask().UpdateClusterState();
+}
+
+void logBooleanStateEvent(bool state)
+{
+    EventNumber eventNumber;
+    Events::StateChange::Type event{ state };
+    if (CHIP_NO_ERROR != LogEvent(event, 1, eventNumber))
+    {
+        ChipLogProgress(Zcl, "booleanstate: failed to reacord state-change event");
+    }
 }
