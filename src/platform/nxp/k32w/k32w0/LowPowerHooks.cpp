@@ -52,6 +52,7 @@ extern "C" void vMMAC_IntHandlerPhy();
 extern "C" void BOARD_SetClockForPowerMode(void);
 extern "C" void stopM2();
 extern "C" void sched_enable();
+extern "C" uint64_t otPlatTimeGet(void);
 
 static void dm_switch_wakeupCallBack(void);
 static void dm_switch_preSleepCallBack(void);
@@ -70,7 +71,10 @@ typedef void * appCallbackParam_t;
 typedef void (*appCallbackHandler_t)(appCallbackParam_t param);
 
 static sDualModeAppStates dualModeStates;
-constexpr uint16_t kThreadWarmDefaultValue  = 4000;
+/* 15.4 warm time must be > 0, so this value will be
+ * updated when 15.4 is initialized for the first time
+ */
+constexpr uint16_t kThreadWarmNotInitializedValue  = 0;
 
 extern "C" void otTaskletsSignalPending(otInstance * p_instance);
 
@@ -86,7 +90,7 @@ void InitLowPower()
     PWR_RegisterLowPowerExitCallback(dm_switch_wakeupCallBack);
     PWR_RegisterLowPowerEnterCallback(dm_switch_preSleepCallBack);
 
-    dualModeStates.threadWarmBootInitTime = kThreadWarmDefaultValue;
+    dualModeStates.threadWarmBootInitTime = kThreadWarmNotInitializedValue;
 
     dm_lp_init();
 }
@@ -225,6 +229,7 @@ static void dm_switch_preSleepCallBack(void)
     /* BUTTON2 change contact, BUTTON4 start adv/factoryreset */
     vOptimizeConsumption((IOCON_FUNC0 | (0x2 << 3) | IOCON_ANALOG_EN), \
                                (1 << IOCON_USER_BUTTON1_PIN) | (1 << IOCON_USER_BUTTON2_PIN));
+
     /* disable SHA clock */
     SHA_ClkDeinit(SHA_INSTANCE);
 
@@ -247,46 +252,36 @@ extern "C" void vDynStopAll(void)
 
 void dm_switch_init15_4AfterWakeUp(void)
 {
-    uint32_t tick1 = 0;
-    uint32_t tick2 = 0;
+    uint64_t tick1 = 0;
 
-    if (dualModeStates.threadWarmBootInitTime == kThreadWarmDefaultValue)
+    if (dualModeStates.threadWarmBootInitTime == kThreadWarmNotInitializedValue)
     {
         /* Get a 32K tick */
         PWR_Start32kCounter();
-        tick1 = PWR_Get32kTimestamp();
+        tick1 = otPlatTimeGet();
     }
 
-    /* Radio must be re-enabled after waking up from sleep.
-     * The module is completely disabled in power down mode */
-    ThreadExitSleep();
-
-    if (dualModeStates.threadWarmBootInitTime == kThreadWarmDefaultValue)
-    {
-        tick2                                 = PWR_Get32kTimestamp();
-        dualModeStates.threadWarmBootInitTime = ((tick2 - tick1) * 15625u) >> 9;
-
-        /* Add a margin of 1 ms */
-        dualModeStates.threadWarmBootInitTime += 1000;
-
-#if ENABLE_LOW_POWER_LOGS
-        K32W_LOG("Calibration: %d", dualModeStates.threadWarmBootInitTime);
-#endif
-    }
-}
-
-static void ThreadExitSleep()
-{
     if (!dualModeStates.threadInitialized && ConnectivityMgr().IsThreadEnabled())
     {
-        /* Install uMac interrupt handlers */
         OSA_InstallIntHandler(ZIGBEE_MAC_IRQn, vMMAC_IntHandlerBbc);
         OSA_InstallIntHandler(ZIGBEE_MODEM_IRQn, vMMAC_IntHandlerPhy);
 
         /* Radio must be re-enabled after waking up from sleep.
-         * The module is completely disabled in power down mode */
+        * The module is completely disabled in power down mode */
         otPlatRadioEnable(NULL);
         sched_enable();
+
+        if (dualModeStates.threadWarmBootInitTime == kThreadWarmNotInitializedValue)
+        {
+            dualModeStates.threadWarmBootInitTime = (uint32_t)(otPlatTimeGet() - tick1);
+
+            /* Add a margin of 1 ms */
+            dualModeStates.threadWarmBootInitTime += 1000;
+
+#if ENABLE_LOW_POWER_LOGS
+            K32W_LOG("Calibration: %d", dualModeStates.threadWarmBootInitTime);
+#endif
+        }
 
         setThreadInitialized(TRUE);
 
