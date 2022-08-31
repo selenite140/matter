@@ -26,7 +26,6 @@ if (chip_enable_openthread) {
 
 static_library("k32w0") {
   sources = [
-    "../../../FreeRTOS/SystemTimeSupport.cpp",
     "../../../SingletonConfigurationManager.cpp",
     "../common/RamStorage.cpp",
     "../common/RamStorage.h",
@@ -55,6 +54,7 @@ static_library("k32w0") {
     "NFCManagerImpl.h",
     "PlatformManagerImpl.cpp",
     "PlatformManagerImpl.h",
+    "SystemTimeSupport.cpp",
     "ble_function_mux.c",
   ]
 
