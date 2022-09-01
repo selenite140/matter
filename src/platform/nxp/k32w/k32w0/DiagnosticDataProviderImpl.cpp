@@ -83,8 +83,7 @@ CHIP_ERROR DiagnosticDataProviderImpl::ResetWatermarks()
     // If implemented, the server SHALL set the value of the CurrentHeapHighWatermark attribute to the
     // value of the CurrentHeapUsed.
 
-    // Internal: MATTER-334
-    //xPortResetHeapMinimumEverFreeHeapSize();
+    xPortResetHeapMinimumEverFreeHeapSize();
 
     return CHIP_NO_ERROR;
 }
@@ -117,6 +116,7 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetThreadMetrics(ThreadMetrics ** threadM
             thread->id = taskStatusArray[x].xTaskNumber;
 
             thread->stackFreeMinimum.Emplace(taskStatusArray[x].usStackHighWaterMark);
+
             /* Unsupported metrics */
             // thread->stackSize;
             // thread->stackFreeCurrent;
