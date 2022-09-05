@@ -110,7 +110,7 @@ CHIP_ERROR DiagnosticDataProviderImpl::GetThreadMetrics(ThreadMetrics ** threadM
         {
             ThreadMetrics * thread = (ThreadMetrics *) pvPortMalloc(sizeof(ThreadMetrics));
 
-            strncpy(thread->NameBuf, taskStatusArray[x].pcTaskName, kMaxThreadNameLength - 1);
+            strncpy(thread->NameBuf, taskStatusArray[x].pcTaskName, kMaxThreadNameLength);
             thread->NameBuf[kMaxThreadNameLength] = '\0';
             thread->name.Emplace(CharSpan::fromCharString(thread->NameBuf));
             thread->id = taskStatusArray[x].xTaskNumber;
