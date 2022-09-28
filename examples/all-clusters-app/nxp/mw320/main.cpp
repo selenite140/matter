@@ -100,7 +100,7 @@ extern "C" {
 #define SSID_FNAME "ssid_fname"
 #define PSK_FNAME "psk_fname"
 
-#define VERSION_STR "mw320-2.9.10-005"
+#define VERSION_STR	"mw320-2.9.10-006"
 enum
 {
     MCUXPRESSO_WIFI_CLI,
