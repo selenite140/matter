@@ -100,7 +100,7 @@ extern "C" {
 #define SSID_FNAME "ssid_fname"
 #define PSK_FNAME "psk_fname"
 
-#define VERSION_STR	"mw320-2.9.10-006"
+#define VERSION_STR	"mw320-2.9.10-007"
 enum
 {
     MCUXPRESSO_WIFI_CLI,
@@ -1387,6 +1387,7 @@ void gpio_init(void)
     return;
 }
 
+
 int main(void)
 {
     //    char ch;
@@ -1497,7 +1498,7 @@ static void OnOnOffPostAttributeChangeCallback(EndpointId endpointId, AttributeI
 {
     VerifyOrExit(attributeId == ZCL_ON_OFF_ATTRIBUTE_ID,
                  ChipLogError(DeviceLayer, "Unhandled Attribute ID: '0x%04lx", attributeId));
-    VerifyOrExit(endpointId == 1 || endpointId == 2, ChipLogError(DeviceLayer, "Unexpected EndPoint ID: `0x%02x'", endpointId));
+    VerifyOrExit(endpointId == 2, ChipLogError(DeviceLayer, "Unexpected EndPoint ID: `0x%02x'", endpointId));
 
     // At this point we can assume that value points to a bool value.
     led_on_off(led_yellow, (*value != 0) ? true : false);
