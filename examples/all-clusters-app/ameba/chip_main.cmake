@@ -16,8 +16,10 @@ include(${pigweed_dir}/pw_protobuf_compiler/proto.cmake)
 
 set(dir_pw_third_party_nanopb "${chip_dir}/third_party/nanopb/repo" CACHE STRING "" FORCE)
 
+pw_set_module_config(pw_rpc_CONFIG pw_rpc.disable_global_mutex_config)
 pw_set_backend(pw_log pw_log_basic)
-pw_set_backend(pw_assert pw_assert_log)
+pw_set_backend(pw_assert.check pw_assert_log.check_backend)
+pw_set_backend(pw_assert.assert pw_assert.assert_compatibility_backend)
 pw_set_backend(pw_sys_io pw_sys_io.ameba)
 pw_set_backend(pw_trace pw_trace_tokenized)
 
@@ -35,7 +37,7 @@ pw_proto_library(attributes_service
   STRIP_PREFIX
     ${chip_dir}/examples/common/pigweed/protos
   DEPS
-    pw_protobuf.common_protos
+    pw_protobuf.common_proto
 )
 
 pw_proto_library(button_service
@@ -46,7 +48,7 @@ pw_proto_library(button_service
   STRIP_PREFIX
     ${chip_dir}/examples/common/pigweed/protos
   DEPS
-    pw_protobuf.common_protos
+    pw_protobuf.common_proto
 )
 
 pw_proto_library(device_service
@@ -59,7 +61,7 @@ pw_proto_library(device_service
   STRIP_PREFIX
     ${chip_dir}/examples/common/pigweed/protos
   DEPS
-    pw_protobuf.common_protos
+    pw_protobuf.common_proto
 )
 
 pw_proto_library(lighting_service
@@ -70,7 +72,7 @@ pw_proto_library(lighting_service
   STRIP_PREFIX
     ${chip_dir}/examples/common/pigweed/protos
   DEPS
-    pw_protobuf.common_protos
+    pw_protobuf.common_proto
 )
 
 pw_proto_library(locking_service
@@ -81,7 +83,7 @@ pw_proto_library(locking_service
   STRIP_PREFIX
     ${chip_dir}/examples/common/pigweed/protos
   DEPS
-    pw_protobuf.common_protos
+    pw_protobuf.common_proto
 )
 
 pw_proto_library(wifi_service
@@ -92,7 +94,7 @@ pw_proto_library(wifi_service
   PREFIX
     wifi_service
   DEPS
-    pw_protobuf.common_protos
+    pw_protobuf.common_proto
   STRIP_PREFIX
     ${chip_dir}/examples/common/pigweed/protos
 )

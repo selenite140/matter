@@ -58,3 +58,14 @@ Run `chef.py -h` to see the available commands
 3. Click on `Save As` and save the file with the name of your new device type
    into the `devices` folder. This device is now available for the script. See
    `chef.py -h` for a list of devices available.
+
+## CI
+
+All CI jobs for chef can be found in `.github/workflows/chef.yaml`.
+
+These jobs use a platform-specific image with base `chip-build`.
+
+CI jobs call chef with the options `--ci -t <PLATFORM>`. The `--ci` option will
+execute builds for all devices specified in `cicd_config["ci_allow_list"]`
+defined in `chef.py` (so long as these devices are also in `/devices`) on the
+specified platform.

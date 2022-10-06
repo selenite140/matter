@@ -100,6 +100,7 @@ logsBucket: matter-build-automation-build-logs
 
 # Global timeout for all steps
 timeout: 9000s
+queueTtl: 21600s
 
 artifacts:
     objects:
@@ -110,4 +111,4 @@ artifacts:
 # building instead of docker download/checkout/bootstrap)
 options:
     machineType: "E2_HIGHCPU_32"
-    diskSizeGb: 200
+    diskSizeGb: 500

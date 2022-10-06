@@ -37,6 +37,12 @@
 
 #include <lib/support/ErrorStr.h>
 
+#include "OTAImageProcessorImpl.h"
+
+#if CONFIG_ENABLE_PW_RPC
+#include "Rpc.h"
+#endif
+
 using namespace ::chip;
 using namespace ::chip::System;
 using namespace ::chip::Credentials;
@@ -66,6 +72,10 @@ static void InitServer(intptr_t context)
 
 extern "C" void app_main()
 {
+#if CONFIG_ENABLE_PW_RPC
+    chip::rpc::Init();
+#endif
+
     ESP_LOGI(TAG, "OTA Requester!");
 
     /* Print chip information */
