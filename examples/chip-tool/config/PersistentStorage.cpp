@@ -43,9 +43,9 @@ std::string GetFilename(const char * name)
 {
     if (name == nullptr)
     {
-        return "/tmp/chip_tool_config.ini";
+        return "/home/root/chip_tool_config.ini";
     }
-    return "/tmp/chip_tool_config." + std::string(name) + ".ini";
+    return "/home/root/chip_tool_config." + std::string(name) + ".ini";
 }
 
 CHIP_ERROR PersistentStorage::Init(const char * name)
