@@ -69,6 +69,8 @@
 #include "app/clusters/bindings/BindingManager.h"
 #include "binding-handler.h"
 
+#include "AppTask.h"
+
 /* platform specific */
 #include "board.h"
 #include "clock_config.h"
@@ -109,7 +111,6 @@ enum
 };
 static int Matter_Selection = MAX_SELECTION;
 #define RUN_RST_LT_DELAY 10
-static const char * TAG = "mw320";
 
 /*******************************************************************************
  * Variables
@@ -303,17 +304,9 @@ typedef enum
     srv_type_max
 } srv_type_t;
 
-typedef enum
-{
-    led_yellow,
-    led_amber,
-    led_max
-} led_id_t;
-
 static void run_chip_srv(System::Layer * aSystemLayer, void * aAppState);
 static void run_dnssrv(System::Layer * aSystemLayer, void * aAppState);
 static void run_update_chipsrv(srv_type_t srv_type);
-static void led_on_off(led_id_t lt_id, bool is_on);
 bool is_connected = false;
 /*******************************************************************************
  * Prototypes
@@ -1281,37 +1274,6 @@ void ShellCLIMain(void * pvParameter)
     Engine::Root().RunMainLoop();
 }
 
-static void led_on_off(led_id_t lt_id, bool is_on)
-{
-    GPIO_Type * pgpio;
-    uint32_t gpio_pin;
-
-    // Configure the GPIO / PIN
-    switch (lt_id)
-    {
-    case led_amber:
-        pgpio    = BOARD_LED_AMBER_GPIO;
-        gpio_pin = BOARD_LED_AMBER_GPIO_PIN;
-        break;
-    case led_yellow:
-    default: // Note: led_yellow as default
-        pgpio    = BOARD_LED_YELLOW_GPIO;
-        gpio_pin = BOARD_LED_YELLOW_GPIO_PIN;
-    }
-    // Do on/off the LED
-    if (is_on == true)
-    {
-        // PRINTF("led on\r\n");
-        GPIO_PortClear(pgpio, GPIO_PORT(gpio_pin), 1u << GPIO_PORT_PIN(gpio_pin));
-    }
-    else
-    {
-        // PRINTF("led off\r\n");
-        GPIO_PortSet(pgpio, GPIO_PORT(gpio_pin), 1u << GPIO_PORT_PIN(gpio_pin));
-    }
-    return;
-}
-
 } // namespace
 
 int StartShellTask(void)
@@ -1489,133 +1451,9 @@ int main(void)
     return 0;
 }
 
+/*
 bool lowPowerClusterSleep()
 {
     return true;
 }
-
-static void OnOnOffPostAttributeChangeCallback(EndpointId endpointId, AttributeId attributeId, uint8_t * value)
-{
-    VerifyOrExit(attributeId == ZCL_ON_OFF_ATTRIBUTE_ID,
-                 ChipLogError(DeviceLayer, "Unhandled Attribute ID: '0x%04lx", attributeId));
-    VerifyOrExit(endpointId == 2, ChipLogError(DeviceLayer, "Unexpected EndPoint ID: `0x%02x'", endpointId));
-
-    // At this point we can assume that value points to a bool value.
-    led_on_off(led_yellow, (*value != 0) ? true : false);
-
-exit:
-    return;
-}
-
-static void OnSwitchAttributeChangeCallback(EndpointId endpointId, AttributeId attributeId, uint8_t * value)
-{
-    //	auto * pimEngine = chip::app::InteractionModelEngine::GetInstance();
-    //	bool do_sendrpt = false;
-
-    VerifyOrExit(attributeId == ZCL_CURRENT_POSITION_ATTRIBUTE_ID,
-                 ChipLogError(DeviceLayer, "Unhandled Attribute ID: '0x%04lx", attributeId));
-    // Send the switch status report now
-/*
-        for (uint32_t i = 0 ; i<pimEngine->GetNumActiveReadHandlers() ; i++) {
-                ReadHandler * phandler = pimEngine->ActiveHandlerAt(i);
-                if (phandler->IsType(chip::app::ReadHandler::InteractionType::Subscribe) &&
-                        (phandler->IsGeneratingReports() || phandler->IsAwaitingReportResponse())) {
-                        phandler->UnblockUrgentEventDelivery();
-                        do_sendrpt = true;
-                        break;
-                }
-        }
-        if (do_sendrpt == true) {
-                ConcreteEventPath event_path(endpointId, ZCL_SWITCH_CLUSTER_ID, 0);
-                pimEngine->GetReportingEngine().ScheduleEventDelivery(event_path, chip::app::EventOptions::Type::kUrgent,
-   sizeof(uint16_t));
-        }
 */
-exit:
-    return;
-}
-
-uint32_t identifyTimerCount;
-constexpr uint32_t kIdentifyTimerDelayMS = 250;
-typedef struct _Identify_Timer
-{
-    EndpointId ep;
-    uint32_t identifyTimerCount;
-} Identify_Time_t;
-Identify_Time_t id_time[MAX_ENDPOINT_COUNT];
-
-void IdentifyTimerHandler(System::Layer * systemLayer, void * appState)
-{
-    Identify_Time_t * pidt = (Identify_Time_t *) appState;
-    PRINTF(" -> %s(%u, %u) \r\n", __FUNCTION__, pidt->ep, pidt->identifyTimerCount);
-    if (pidt->identifyTimerCount)
-    {
-        pidt->identifyTimerCount--;
-        emAfWriteAttribute(pidt->ep, ZCL_IDENTIFY_CLUSTER_ID, ZCL_IDENTIFY_TIME_ATTRIBUTE_ID, (uint8_t *) &pidt->identifyTimerCount,
-                           sizeof(identifyTimerCount), true, false);
-        DeviceLayer::SystemLayer().StartTimer(System::Clock::Seconds16(1), IdentifyTimerHandler, pidt);
-    }
-}
-
-static void OnIdentifyPostAttributeChangeCallback(EndpointId endpointId, AttributeId attributeId, uint8_t * value)
-{
-    VerifyOrExit(attributeId == ZCL_IDENTIFY_TIME_ATTRIBUTE_ID,
-                 ChipLogError(DeviceLayer, "[%s] Unhandled Attribute ID: '0x%04lx", TAG, attributeId));
-    VerifyOrExit((endpointId < MAX_ENDPOINT_COUNT),
-                 ChipLogError(DeviceLayer, "[%s] EndPoint > max: [%u, %u]", TAG, endpointId, MAX_ENDPOINT_COUNT));
-    if (id_time[endpointId].identifyTimerCount != *value)
-    {
-        id_time[endpointId].ep                 = endpointId;
-        id_time[endpointId].identifyTimerCount = *value;
-        PRINTF("-> Identify: %u \r\n", id_time[endpointId].identifyTimerCount);
-        DeviceLayer::SystemLayer().StartTimer(System::Clock::Seconds16(1), IdentifyTimerHandler, &id_time[endpointId]);
-    }
-
-exit:
-    return;
-}
-
-/*
-        Callback to receive the cluster modification event
-*/
-void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & path, uint8_t type, uint16_t size, uint8_t * value)
-{
-    PRINTF("==> MatterPostAttributeChangeCallback, cluster: %x, attr: %x, size: %d \r\n", path.mClusterId, path.mAttributeId, size);
-    // path.mEndpointId, path.mClusterId, path.mAttributeId, mask, type, size, value
-    switch (path.mClusterId)
-    {
-    case ZCL_ON_OFF_CLUSTER_ID:
-        OnOnOffPostAttributeChangeCallback(path.mEndpointId, path.mAttributeId, value);
-        break;
-    case ZCL_SWITCH_CLUSTER_ID:
-        OnSwitchAttributeChangeCallback(path.mEndpointId, path.mAttributeId, value);
-        // SwitchToggleOnOff();
-        // Trigger to send on/off/toggle command to the bound devices
-        chip::BindingManager::GetInstance().NotifyBoundClusterChanged(1, chip::app::Clusters::OnOff::Id, nullptr);
-        break;
-    case ZCL_IDENTIFY_CLUSTER_ID:
-        OnIdentifyPostAttributeChangeCallback(path.mEndpointId, path.mAttributeId, value);
-        break;
-    default:
-        break;
-    }
-    return;
-}
-
-EmberAfStatus emberAfExternalAttributeWriteCallback(EndpointId endpoint, ClusterId clusterId,
-                                                    const EmberAfAttributeMetadata * attributeMetadata, uint8_t * buffer)
-{
-    PRINTF("====> %s() \r\n", __FUNCTION__);
-    return EMBER_ZCL_STATUS_SUCCESS;
-}
-
-EmberAfStatus emberAfExternalAttributeReadCallback(EndpointId endpoint, ClusterId clusterId,
-                                                   const EmberAfAttributeMetadata * attributeMetadata, uint8_t * buffer,
-                                                   uint16_t maxReadLength)
-{
-    // Added for the pairing of TE9 to report the commission_info
-    // default function (in zzz_generated/all-clusters-app/zap-generated/callback-stub.cpp)
-    //
-    PRINTF("-> %s()\n\r", __FUNCTION__);
-    return EMBER_ZCL_STATUS_SUCCESS;
-}
