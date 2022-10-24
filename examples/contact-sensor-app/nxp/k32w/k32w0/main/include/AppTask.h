@@ -95,6 +95,7 @@ private:
     static void UpdateClusterStateInternal(intptr_t arg);
     static void UpdateDeviceStateInternal(intptr_t arg);
     static void InitServer(intptr_t arg);
+    static void PrintOnboardingInfo();
 
     enum class Function : uint8_t
     {

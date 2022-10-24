@@ -19,6 +19,7 @@
 #include "AppTask.h"
 #include "AppEvent.h"
 #include <app/server/Server.h>
+#include <app/server/OnboardingCodesUtil.h>
 #include <lib/support/ErrorStr.h>
 
 #include <DeviceInfoProviderImpl.h>
@@ -112,7 +113,7 @@ CHIP_ERROR AppTask::Init()
 #endif
 
     // QR code will be used with CHIP Tool
-    PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
+    AppTask::PrintOnboardingInfo();
 #endif
 
     /* HW init leds */
@@ -195,6 +196,21 @@ void AppTask::InitServer(intptr_t arg)
     nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
     initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
     VerifyOrDie((chip::Server::GetInstance().Init(initParams)) == CHIP_NO_ERROR);
+}
+
+void AppTask::PrintOnboardingInfo()
+{
+    chip::PayloadContents payload;
+    CHIP_ERROR err = GetPayloadContents(
+        payload,
+        chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE)
+    );
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "GetPayloadContents() failed: %" CHIP_ERROR_FORMAT, err.Format());
+    }
+    payload.commissioningFlow = chip::CommissioningFlow::kUserActionRequired;
+    PrintOnboardingCodes(payload);
 }
 
 void AppTask::AppTaskMain(void * pvParameter)

@@ -1,0 +1,157 @@
+# Copyright (c) 2022 Project CHIP Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build_overrides/nxp_sdk.gni")
+import("${nxp_sdk_build_root}/nxp_sdk.gni")
+import("${nxp_sdk_build_root}/${nxp_sdk_name}/rt_sdk.gni")
+
+declare_args() {
+    evkname = "evkbmimxrt1060"
+    deviceBoardName = "MIMXRT1062"
+}
+
+COMPONENT_FILES_PATH = "${rt_sdk_root}/core/components"
+DRIVER_FILES_PATH = "${rt_sdk_root}/core/drivers"
+DRIVER_LPUART_FILES_PATH = "${DRIVER_FILES_PATH}/lpuart"
+DRIVER_EDMA_FILES_PATH = "${DRIVER_FILES_PATH}/edma"
+DRIVER_DMAMUX_FILES_PATH = "${DRIVER_FILES_PATH}/dmamux"
+DRIVER_PIT_FILES_PATH = "${DRIVER_FILES_PATH}/pit"
+DRIVER_TRNG_FILES_PATH = "${DRIVER_FILES_PATH}/trng"
+DRIVER_FLEXSPI_FILES_PATH = "${DRIVER_FILES_PATH}/flexspi"
+DRIVER_IGPIO_FILES_PATH = "${DRIVER_FILES_PATH}/igpio"
+DRIVER_ENET_FILES_PATH = "${DRIVER_FILES_PATH}/enet"
+DRIVER_DCP_FILES_PATH = "${DRIVER_FILES_PATH}/dcp"
+DRIVER_CACHE_FILES_PATH = "${DRIVER_FILES_PATH}/cache/armv7-m7"
+DRIVER_COMMON_FILES_PATH = "${DRIVER_FILES_PATH}/common"
+DRIVER_DEVICE_FILES_PATH = "${rt_sdk_root}/core/devices/${deviceBoardName}/drivers"
+DRIVER_USDHC_FILES_PATH = "${DRIVER_FILES_PATH}/usdhc"
+COMPONENT_CRC_FILES_PATH = "${COMPONENT_FILES_PATH}/crc"
+COMPONENT_RNG_FILES_PATH = "${COMPONENT_FILES_PATH}/rng"
+COMPONENT_SILICON_ID_FILES_PATH = "${COMPONENT_FILES_PATH}/silicon_id"
+UTILITIES_FILES_PATH = "${rt_sdk_root}/core/utilities"
+UTILITIES_DEVICE_FILES_PATH = "${rt_sdk_root}/core/devices/${deviceBoardName}/utilities"
+DEBUG_CONSOLE_FILES_PATH = "${UTILITIES_FILES_PATH}/debug_console_lite"
+STR_FILES_PATH = "${UTILITIES_FILES_PATH}/debug_console/str"
+FSL_FLEXSPI_NOR_BOOT_FILES_PATH = "${rt_sdk_root}/core/devices/${deviceBoardName}/xip"
+
+template("rt1060_sdk_drivers") {
+  config("${target_name}_config") {
+    include_dirs = []
+
+    if (defined(invoker.include_dirs)) {
+      include_dirs += invoker.include_dirs
+    }
+
+    _rt1060_sdk_drivers_include_dirs = [
+        #Drivers files
+        "${DRIVER_DEVICE_FILES_PATH}",
+        "${rt_sdk_root}/core/devices/${deviceBoardName}",
+        "${COMPONENT_CRC_FILES_PATH}",
+        "${COMPONENT_RNG_FILES_PATH}",
+        "${COMPONENT_SILICON_ID_FILES_PATH}",
+        "${DRIVER_COMMON_FILES_PATH}",
+        "${DRIVER_LPUART_FILES_PATH}",
+        "${DRIVER_EDMA_FILES_PATH}",
+        "${DRIVER_DMAMUX_FILES_PATH}",
+        "${DRIVER_IGPIO_FILES_PATH}",
+        "${DRIVER_DCP_FILES_PATH}",
+        "${DRIVER_ENET_FILES_PATH}",
+        "${DRIVER_CACHE_FILES_PATH}",
+        "${DRIVER_PIT_FILES_PATH}",
+        "${DRIVER_USDHC_FILES_PATH}",
+        "${DRIVER_TRNG_FILES_PATH}",
+        "${DRIVER_FLEXSPI_FILES_PATH}",
+        "${UTILITIES_FILES_PATH}",
+        "${UTILITIES_DEVICE_FILES_PATH}",
+        "${DEBUG_CONSOLE_FILES_PATH}",
+        "${STR_FILES_PATH}",
+        # XIP
+        "${rt_sdk_root}/core/boards/${evkname}/xip",
+        "${rt_sdk_root}/core/components/flash/mflash",
+        "${rt_sdk_root}/core/components/flash/mflash/mimxrt1062",
+    ]
+
+    libs = []
+
+    if (defined(invoker.defines)) {
+      defines += invoker.defines
+    }
+    else {
+        defines = []
+    }
+
+    defines += [
+        "CPU_${deviceBoardName}DVL6A",
+        "CPU_${deviceBoardName}DVL6A_cm7",
+    ]
+
+    cflags = []
+
+    if (defined(invoker.cflags)) {
+      cflags += invoker.cflags
+    }
+
+    # Now add our "system-header" include dirs
+    foreach(include_dir, _rt1060_sdk_drivers_include_dirs) {
+      cflags += [ "-isystem" + rebase_path(include_dir, root_build_dir) ]
+    }
+
+  }
+
+  source_set(target_name) {
+    forward_variables_from(invoker, "*")
+
+    if (!defined(sources)) {
+      sources = []
+    }
+
+    sources += [
+        "${DRIVER_LPUART_FILES_PATH}/fsl_lpuart.c",
+        "${DRIVER_LPUART_FILES_PATH}/fsl_lpuart_edma.c",
+        "${DRIVER_EDMA_FILES_PATH}/fsl_edma.c",
+        "${DRIVER_DMAMUX_FILES_PATH}/fsl_dmamux.c",
+        "${DRIVER_PIT_FILES_PATH}/fsl_pit.c",
+        "${DRIVER_TRNG_FILES_PATH}/fsl_trng.c",
+        "${DRIVER_FLEXSPI_FILES_PATH}/fsl_flexspi.c",
+        "${DRIVER_DCP_FILES_PATH}/fsl_dcp.c",
+        "${DRIVER_IGPIO_FILES_PATH}/fsl_gpio.c",
+        "${DRIVER_ENET_FILES_PATH}/fsl_enet.c",
+        "${DRIVER_CACHE_FILES_PATH}/fsl_cache.c",
+        "${DRIVER_COMMON_FILES_PATH}/fsl_common_arm.c",
+        "${DRIVER_DEVICE_FILES_PATH}/fsl_clock.c",
+        "${COMPONENT_CRC_FILES_PATH}/fsl_adapter_software_crc.c",
+        "${COMPONENT_RNG_FILES_PATH}/fsl_adapter_trng.c",
+        "${COMPONENT_SILICON_ID_FILES_PATH}/fsl_silicon_id.c",
+        "${UTILITIES_DEVICE_FILES_PATH}/fsl_shell.c",
+        "${UTILITIES_FILES_PATH}/assert/fsl_assert.c",
+        "${DEBUG_CONSOLE_FILES_PATH}/fsl_debug_console.c",
+        # comment fsl_str.c if using debug console light
+        #"${STR_FILES_PATH}/fsl_str.c",
+        # XIP
+        "${FSL_FLEXSPI_NOR_BOOT_FILES_PATH}/fsl_flexspi_nor_boot.c",
+        "${rt_sdk_root}/core/boards/${evkname}/xip/${evkname}_flexspi_nor_config.c",
+        #startup files
+        "${rt_sdk_root}/core/devices/${deviceBoardName}/gcc/startup_${deviceBoardName}.S",
+        "${rt_sdk_root}/core/devices/${deviceBoardName}/system_${deviceBoardName}.c",
+        "${DRIVER_USDHC_FILES_PATH}/fsl_usdhc.c",
+        "${rt_sdk_root}/core/components/flash/mflash/mimxrt1062/mflash_drv.c",
+    ]
+
+    if (!defined(public_configs)) {
+      public_configs = []
+    }
+
+    public_configs += [ ":${target_name}_config" ]
+  }
+}

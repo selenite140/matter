@@ -135,10 +135,8 @@ states are depicted:
 *   _Solid On_ &mdash; The device is fully provisioned and has full network and
     service connectivity.
 
-**LED D3** shows the state of the simulated lock bolt. When the LED is lit the
-bolt is extended (i.e. door locked); when not lit, the bolt is retracted (door
-unlocked). The LED will flash whenever the simulated bolt is in motion from one
-position to another.
+**LED D3** shows the state of the simulated contact sensor. when the LED is lit,
+the sensor is contacted, when not lit, the sensor is non-contacted.
 
 **Button SW2** can be used to reset the device to a default state. A short Press
 Button SW2 initiates a factory reset. After an initial period of 3 seconds, LED2
@@ -147,13 +145,10 @@ cause the device to reset its persistent configuration and initiate a reboot.
 The reset action can be cancelled by press SW2 button at any point before the 6
 second limit.
 
-**Button SW3** can be used to change the state of the simulated bolt. This can
-be used to mimic a user manually operating the lock. The button behaves as a
-toggle, swapping the state every time it is pressed.
+**Button SW3** can be used to change the state of the simulated contact senosr.
+The button behaves as a toggle, swapping the state every time it is pressed.
 
-**Button SW4** can be used for joining a predefined Thread network advertised by
-a Border Router. Default parameters for a Thread network are hard-coded and are
-being used if this button is pressed.
+**Button SW4** can be used for initiating the OTA software update process.
 
 The remaining two LEDs (D1/D4) and button (SW1) are unused.
 
@@ -170,6 +165,8 @@ DS3, which can be found on the DK6 board.
 
 Also, by long pressing the **USERINTERFACE** button, the factory reset action
 will be initiated.
+
+when low power is enabled, the **ISP button** on DK6 board is used to change contact status.
 
 <a name="building"></a>
 
@@ -213,6 +210,10 @@ to zero. The argument chip_with_OM15082 is set to zero by default.
 In case that Openthread CLI is needed, chip_with_ot_cli build argument must be
 set to 1.
 
+In case the board doesn't have 32KHz crystal fitted, one can use the 32KHz free
+running oscilator as a clock source. In this case one must set the use_fro_32k
+argument to 1.
+
 In case signing errors are encountered when running the "sign_images.sh" script
 install the recommanded packages (python version > 3, pip3, pycrypto,
 pycryptodome):
@@ -242,6 +243,14 @@ The resulting output file can be found in out/debug/chip-k32w0x-contact-example.
 
 See
 [Guide for writing manufacturing data on NXP devices](../../../../platform/nxp/doc/manufacturing_flow.md).
+
+There are factory data generated binaries available in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data folder.
+These are based on the DAC, PAI and PAA certificates found in scripts/tools/nxp/demo_generated_certs folder.
+The demo_factory_data_dut1.bin uses the DAC certificate and private key found in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data/dac/dut1 folder.
+The demo_factory_data_dut2.bin uses the DAC certificate and private key found in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data/dac/dut2 folder.
+These two factory data binaries can be used for testing topologies with 2 DUTS. They contain the corresponding DACs/PAIs generated using generate_nxp_chip_factory_bin.py script.
+The discriminator is 14014 and the passcode is 1000.
+These demo certificates are working with the CDs installed in CHIPProjectConfig.h.
 
 <a name="flashdebug"></a>
 
@@ -560,9 +569,10 @@ The example also offers the possibility to run in low power mode. This means
 that the board will go in a deep power down mode most of the time and the power
 consumption will be very low.
 
-In order build with low power support, the _chip_with_low_power=1_ must be
+In order to build with low power support, the _chip_with_low_power=1_ must be
 provided to the build system. In this case, please note that the GN build
-arguments chip*with_OM15082 and \_chip_with_ot_cli* must be set to 0.
+arguments _chip_with_OM15082_ and _chip_with_ot_cli_ must be set to 0 and
+_chip_logging_ must be set to false to disable logging.
 
 In order to maintain a low power consumption, the LEDs showing the state of the
 elock and the internal state are disabled. Console logs can be used instead.

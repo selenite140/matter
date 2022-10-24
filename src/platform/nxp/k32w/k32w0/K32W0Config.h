@@ -195,7 +195,8 @@ CHIP_ERROR K32WConfig::WriteConfigValue(Key key, TValue val)
     SuccessOrExit(err);
 
     buffer = RamStorage::GetBuffer();
-    status = PDM_eSaveRecordDataInIdleTask(kNvmIdChipConfigData, buffer, buffer->ramBufferLen + kRamDescHeaderSize);
+    status = FS_eSaveRecordDataInIdleTask(kNvmIdChipConfigData, buffer,
+                                          buffer->ramBufferLen + kRamDescHeaderSize);
     SuccessOrExit(err = MapPdmStatusToChipError(status));
 
 exit:

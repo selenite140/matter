@@ -229,6 +229,10 @@ to zero. The argument chip_with_OM15082 is set to zero by default.
 In case that Openthread CLI is needed, chip_with_ot_cli build argument must be
 set to 1.
 
+In case the board doesn't have 32KHz crystal fitted, one can use the 32KHz free
+running oscilator as a clock source. In this case one must set the use_fro_32k
+argument to 1.
+
 In case signing errors are encountered when running the "sign_images.sh" script
 install the recommanded packages (python version > 3, pip3, pycrypto,
 pycryptodome):
@@ -258,6 +262,14 @@ The resulting output file can be found in out/debug/chip-k32w0x-light-example.
 
 See
 [Guide for writing manufacturing data on NXP devices](../../../../platform/nxp/doc/manufacturing_flow.md).
+
+There are factory data generated binaries available in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data folder.
+These are based on the DAC, PAI and PAA certificates found in scripts/tools/nxp/demo_generated_certs folder.
+The demo_factory_data_dut1.bin uses the DAC certificate and private key found in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data/dac/dut1 folder.
+The demo_factory_data_dut2.bin uses the DAC certificate and private key found in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data/dac/dut2 folder.
+These two factory data binaries can be used for testing topologies with 2 DUTS. They contain the corresponding DACs/PAIs generated using generate_nxp_chip_factory_bin.py script.
+The discriminator is 14014 and the passcode is 1000.
+These demo certificates are working with the CDs installed in CHIPProjectConfig.h.
 
 <a name="flashdebug"></a>
 

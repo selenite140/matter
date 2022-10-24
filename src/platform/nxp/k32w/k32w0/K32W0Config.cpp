@@ -145,7 +145,8 @@ CHIP_ERROR K32WConfig::WriteConfigValueStr(Key key, const char * str, size_t str
         err = RamStorage::Write(key, (uint8_t *) str, strLen);
         SuccessOrExit(err);
         buffer = RamStorage::GetBuffer();
-        status = PDM_eSaveRecordDataInIdleTask(kNvmIdChipConfigData, buffer, buffer->ramBufferLen + kRamDescHeaderSize);
+        status = FS_eSaveRecordDataInIdleTask(kNvmIdChipConfigData, buffer,
+                                              buffer->ramBufferLen + kRamDescHeaderSize);
     }
 
 exit:
@@ -176,7 +177,8 @@ CHIP_ERROR K32WConfig::ClearConfigValue(Key key)
     SuccessOrExit(err);
 
     buffer = RamStorage::GetBuffer();
-    status = PDM_eSaveRecordDataInIdleTask(kNvmIdChipConfigData, buffer, buffer->ramBufferLen + kRamDescHeaderSize);
+    status =
+        FS_eSaveRecordDataInIdleTask(kNvmIdChipConfigData, buffer, buffer->ramBufferLen + kRamDescHeaderSize);
     SuccessOrExit(err = MapPdmStatusToChipError(status));
 
 exit:

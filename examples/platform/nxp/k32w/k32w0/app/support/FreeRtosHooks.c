@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "PDM.h"
+#include "pdm_ram_storage_glue.h"
 #include "PWR_Interface.h"
 #include "TimersManager.h"
 #include "board.h"
@@ -236,11 +237,8 @@ extern void OTAIdleActivities(void);
 
 void vApplicationIdleHook(void)
 {
-    vTaskSuspendAll();
-    PDM_vIdleTask(PDM_MAX_WRITES_INFINITE);
-    xTaskResumeAll();
+    FS_vIdleTask(PDM_MAX_WRITES_INFINITE);
 
     OTAIdleActivities();
-
     BOARD_ActionOnIdle();
 }

@@ -244,12 +244,6 @@ static void dm_switch_preSleepCallBack(void)
     BOARD_SetClockForPowerMode();
 }
 
-extern "C" void vDynStopAll(void)
-{
-    vDynRequestState(E_DYN_SLAVE, E_DYN_STATE_OFF);
-    vDynRequestState(E_DYN_MASTER, E_DYN_STATE_OFF);
-}
-
 void dm_switch_init15_4AfterWakeUp(void)
 {
     uint64_t tick1 = 0;
