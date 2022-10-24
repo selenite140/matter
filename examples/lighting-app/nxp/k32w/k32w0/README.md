@@ -196,13 +196,13 @@ In order to build the Project CHIP example, we recommend using a Linux
 distribution (the demo-application was compiled on Ubuntu 20.04).
 
 -   Download
-    [K32W0 SDK 2.6.7](https://cache.nxp.com/lgfiles/bsps/SDK_2_6_7_K32W061DK6.zip).
+    [K32W0 SDK 2.6.8](https://cache.nxp.com/lgfiles/bsps/SDK_2_6_8_K32W061DK6.zip).
 
 -   Start building the application either with Secure Element or without
     -   without Secure Element
 
 ```
-user@ubuntu:~/Desktop/git/connectedhomeip$ export NXP_K32W0_SDK_ROOT=/home/user/Desktop/SDK_2_6_7_K32W061DK6/
+user@ubuntu:~/Desktop/git/connectedhomeip$ export NXP_K32W0_SDK_ROOT=/home/user/Desktop/SDK_2_6_8_K32W061DK6/
 user@ubuntu:~/Desktop/git/connectedhomeip$ ./third_party/nxp/k32w0_sdk/sdk_fixes/patch_k32w_sdk.sh
 user@ubuntu:~/Desktop/git/connectedhomeip$ source ./scripts/activate.sh
 user@ubuntu:~/Desktop/git/connectedhomeip$ cd examples/lighting-app/nxp/k32w/k32w0
@@ -263,13 +263,20 @@ The resulting output file can be found in out/debug/chip-k32w0x-light-example.
 See
 [Guide for writing manufacturing data on NXP devices](../../../../platform/nxp/doc/manufacturing_flow.md).
 
-There are factory data generated binaries available in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data folder.
-These are based on the DAC, PAI and PAA certificates found in scripts/tools/nxp/demo_generated_certs folder.
-The demo_factory_data_dut1.bin uses the DAC certificate and private key found in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data/dac/dut1 folder.
-The demo_factory_data_dut2.bin uses the DAC certificate and private key found in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data/dac/dut2 folder.
-These two factory data binaries can be used for testing topologies with 2 DUTS. They contain the corresponding DACs/PAIs generated using generate_nxp_chip_factory_bin.py script.
-The discriminator is 14014 and the passcode is 1000.
-These demo certificates are working with the CDs installed in CHIPProjectConfig.h.
+There are factory data generated binaries available in
+examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data folder.
+These are based on the DAC, PAI and PAA certificates found in
+scripts/tools/nxp/demo_generated_certs folder. The demo_factory_data_dut1.bin
+uses the DAC certificate and private key found in
+examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data/dac/dut1
+folder. The demo_factory_data_dut2.bin uses the DAC certificate and private key
+found in
+examples/platform/nxp/k32w/k32w0/scripts/demo_generated_factory_data/dac/dut2
+folder. These two factory data binaries can be used for testing topologies with
+2 DUTS. They contain the corresponding DACs/PAIs generated using
+generate_nxp_chip_factory_bin.py script. The discriminator is 14014 and the
+passcode is 1000. These demo certificates are working with the CDs installed in
+CHIPProjectConfig.h.
 
 <a name="flashdebug"></a>
 
