@@ -14,9 +14,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-//#include "FreeRTOS.h"
-//#include "task.h"
-
 #include <lib/shell/Engine.h>
 
 #include <app/server/OnboardingCodesUtil.h>
@@ -78,8 +75,8 @@
 #include "fsl_gpio.h"
 #include "pin_mux.h"
 
-#include <wm_os.h>
 extern "C" {
+#include <wm_os.h>
 #include "boot_flags.h"
 #include "cli.h"
 #include "dhcp-server.h"
@@ -93,6 +90,7 @@ extern "C" {
 }
 #include "fsl_aes.h"
 #include "lpm.h"
+#include "hkdf-sha.h"
 
 /*******************************************************************************
  * Definitions
@@ -1169,6 +1167,7 @@ void init_mw320_sdk()
     PRINTF("call mcuInitPower() \r\n");
     mcuInitPower();
     boot_init();
+    get_hash_from_uninit_mem();
     mflash_drv_init();
     cli_init();
     part_init();
@@ -1352,13 +1351,6 @@ void gpio_init(void)
 
 int main(void)
 {
-    //    char ch;
-    //    unsigned int bp;
-    //    unsigned int mw320_sec = 9000000;
-    //    unsigned int default_ch;
-    //    unsigned int default_1= 0;
-    //    unsigned int default_2= 0;
-
     /* Initialize platform */
     // BOARD_ConfigMPU();
     BOARD_InitPins();
