@@ -15,5 +15,5 @@ convert_to_dos() {
 SOURCE=${BASH_SOURCE[0]}
 SOURCE_DIR=$(cd "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)
 
-echo "K32W SDK 2.6.7 no patch needed!"
+echo "K32W SDK 2.6.8 no patch needed!"
 exit 0
