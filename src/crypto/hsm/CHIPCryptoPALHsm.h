@@ -185,6 +185,8 @@ public:
                                    const size_t salt_length, const uint8_t * info, const size_t info_length, uint8_t * out_buffer,
                                    size_t out_length) override;
 
+    void setKeyId(uint32_t keyId) { keyid = keyId; }
+
 private:
     uint32_t keyid;
 };

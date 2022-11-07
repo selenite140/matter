@@ -156,6 +156,8 @@ static_library("crypto") {
   }
 
   if (chip_with_se05x == 1) {
+    sources -= [ "RandUtils.cpp" ]
+
     sources += [
       "hsm/nxp/CHIPCryptoPALHsm_SE05X_HKDF.cpp",
       "hsm/nxp/CHIPCryptoPALHsm_SE05X_HMAC.cpp",
@@ -165,6 +167,7 @@ static_library("crypto") {
       "hsm/nxp/CHIPCryptoPALHsm_SE05X_utils.cpp",
       "hsm/nxp/PersistentStorageOperationalKeystoreHSM.cpp",
       "hsm/nxp/PersistentStorageOperationalKeystoreHSM.h",
+      "hsm/nxp/RandUtils_SE05x.cpp",
     ]
     public_deps += [ "${chip_root}/third_party/simw-top-mini:se05x" ]
     public_configs += [ "${chip_root}/third_party/simw-top-mini:se05x_config" ]

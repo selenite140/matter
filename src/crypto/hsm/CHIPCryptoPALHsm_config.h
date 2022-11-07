@@ -45,12 +45,17 @@
 /*
  * Enable HSM for HKDF SHA256
  */
-#define ENABLE_HSM_HKDF_SHA256 0
+#define ENABLE_HSM_HKDF_SHA256 1
 
 /*
  * Enable HSM for HMAC SHA256
  */
 #define ENABLE_HSM_HMAC_SHA256 0
+
+/*
+ * Enable HSM for Random generator
+ */
+#define ENABLE_HSM_RAND_GEN 1
 
 #if ((CHIP_CRYPTO_HSM) && ((ENABLE_HSM_SPAKE_VERIFIER) || (ENABLE_HSM_SPAKE_PROVER)))
 #define ENABLE_HSM_SPAKE
@@ -73,3 +78,10 @@
 #if ((CHIP_CRYPTO_HSM) && (ENABLE_HSM_HMAC_SHA256))
 #define ENABLE_HSM_HMAC
 #endif
+
+#if ((CHIP_CRYPTO_HSM) && (ENABLE_HSM_RAND_GEN))
+#define ENABLE_HSM_RAND
+#endif
+
+/* SE05x specific config options */
+#include "nxp/CHIPCryptoPALHsm_SE05x_config.h"

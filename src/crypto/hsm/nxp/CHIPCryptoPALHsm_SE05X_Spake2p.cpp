@@ -63,11 +63,6 @@ CHIP_ERROR create_init_crypto_obj(chip::Crypto::CHIP_SPAKE2P_ROLE role, hsm_pake
 #else
     SE05x_CryptoObjectID_t spakeObjectId =
         (role == chip::Crypto::CHIP_SPAKE2P_ROLE::VERIFIER) ? kSE05x_CryptoObject_PAKE_TYPE_B : kSE05x_CryptoObject_PAKE_TYPE_A;
-    uint8_t list[1024] = {
-        0,
-    };
-    size_t listlen            = sizeof(list);
-    size_t i                  = 0;
     uint8_t create_crypto_obj = 1;
 #endif
 
@@ -98,20 +93,92 @@ CHIP_ERROR create_init_crypto_obj(chip::Crypto::CHIP_SPAKE2P_ROLE role, hsm_pake
     spake_objects_created++;
 
 #else
-    smstatus = Se05x_API_ReadCryptoObjectList(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, list, &listlen);
-    for (i = 0; i < listlen; i += 4)
+
+#if 0 // Enable this block to avoid creating crypto object if present already.
     {
-        uint32_t cryptoObjectId = static_cast<uint32_t>(list[i + 1] | (list[i + 0] << 8));
-        if (cryptoObjectId == spakeObjectId)
+        uint8_t list[1024] = {
+        0,
+        };
+        size_t listlen            = sizeof(list);
+        size_t i                  = 0;
+        smstatus = Se05x_API_ReadCryptoObjectList(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, list, &listlen);
+        for (i = 0; i < listlen; i += 4)
         {
-            create_crypto_obj = 0;
+            uint32_t cryptoObjectId = static_cast<uint32_t>(list[i + 1] | (list[i + 0] << 8));
+            if (cryptoObjectId == spakeObjectId)
+            {
+                create_crypto_obj = 0;
+            }
         }
     }
+#else
+    {
+        /* Ignore the error */
+        Se05x_API_DeleteCryptoObject(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, spakeObjectId);
+        create_crypto_obj = 1;
+    }
+#endif
 
     if (create_crypto_obj)
     {
+#if SE05X_SECURE_OBJECT_FOR_SPAKE2P_SESSION_KEYS
+
+        static sss_policy_u commonPol;
+        commonPol.type                     = KPolicy_Common;
+        commonPol.auth_obj_id              = 0;
+        commonPol.policy.common.req_Sm     = 0;
+        commonPol.policy.common.can_Delete = 1;
+        commonPol.policy.common.can_Read   = 0;
+        commonPol.policy.common.can_Write  = 1;
+
+        static sss_policy_u hmackey_withPol;
+        hmackey_withPol.type                     = KPolicy_Sym_Key;
+        hmackey_withPol.auth_obj_id              = 0;
+        hmackey_withPol.policy.symmkey.can_Write = 1;
+        hmackey_withPol.policy.symmkey.can_KA    = 1;
+        hmackey_withPol.policy.symmkey.can_KD    = 1;
+        hmackey_withPol.policy.symmkey.can_HKDF  = 1;
+
+        static sss_policy_u master_key_for_drv_key;
+        master_key_for_drv_key.type                              = KPolicy_Derive_Master_Key_Id;
+        master_key_for_drv_key.auth_obj_id                       = 0;
+#if ENABLE_HSM_SPAKE_VERIFIER
+        master_key_for_drv_key.policy.master_key_id.master_keyId = w0in_id_v;
+#else
+        master_key_for_drv_key.policy.master_key_id.master_keyId = w0in_id_p;
+#endif
+
+        sss_policy_t policy_for_hmac_key;
+        policy_for_hmac_key.nPolicies   = 3;
+        policy_for_hmac_key.policies[0] = &hmackey_withPol;
+        policy_for_hmac_key.policies[1] = &master_key_for_drv_key;
+        policy_for_hmac_key.policies[2] = &commonPol;
+
+        sss_status_t status     = kStatus_SSS_Success;
+        sss_object_t keyObject  = { 0 };
+        const uint8_t zeros[16] = {
+            0,
+        };
+        uint32_t targetSecureObjectID = kKeyId_spake2p_target_secure_object;
+
+        status = sss_key_object_init(&keyObject, &gex_sss_chip_ctx.ks);
+        VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+        status = sss_key_object_allocate_handle(&keyObject, targetSecureObjectID, kSSS_KeyPart_Default, kSSS_CipherType_HMAC,
+                                                sizeof(zeros), kKeyObject_Mode_Transient);
+        VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+        status = sss_key_store_set_key(&gex_sss_chip_ctx.ks, &keyObject, zeros, sizeof(zeros), sizeof(zeros) * 8,
+                                       &policy_for_hmac_key, sizeof(policy_for_hmac_key));
+        VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+        smstatus =
+            Se05x_API_CreateCryptoObject_WithTargetSecObj(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx,
+                                                          spakeObjectId, kSE05x_CryptoContext_PAKE, subtype, targetSecureObjectID);
+#else
         smstatus = Se05x_API_CreateCryptoObject(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, spakeObjectId,
                                                 kSE05x_CryptoContext_PAKE, subtype);
+#endif
         VerifyOrReturnError(smstatus == SM_OK, CHIP_ERROR_INTERNAL);
     }
 #endif
