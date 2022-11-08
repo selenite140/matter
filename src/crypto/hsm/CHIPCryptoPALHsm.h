@@ -119,6 +119,7 @@ public:
     P256KeypairHSM()
     {
         provisioned_key = false;
+        is_persistent = false;
         keyid           = 0;
     }
 
@@ -140,6 +141,8 @@ public:
     const P256PublicKeyHSM & Pubkey() const override { return mPublicKeyHSM; }
 
     bool provisioned_key;
+
+    bool is_persistent;
 
     void SetKeyId(uint32_t id) { keyid = id; }
 

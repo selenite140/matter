@@ -48,6 +48,7 @@ enum keyid_values
     kKeyId_sha256_ecc_pub_keyid,
     kKeyId_case_ephemeral_keyid,
     kKeyId_spake2p_target_secure_object,
+    kKeyId_fabric_key_table_keyid,
 };
 
 // Enable the below macro to make spake HSM imlementation reentrant.

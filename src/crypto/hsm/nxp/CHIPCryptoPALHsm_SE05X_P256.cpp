@@ -85,9 +85,9 @@ CHIP_ERROR P256KeypairHSM::Initialize()
 
     if (provisioned_key == false)
     {
+        uint32_t options = (is_persistent == true) ? kKeyObject_Mode_Persistent : kKeyObject_Mode_Transient;
 
-        status = sss_key_object_allocate_handle(&keyObject, keyid, kSSS_KeyPart_Pair, kSSS_CipherType_EC_NIST_P, 256,
-                                                kKeyObject_Mode_Transient);
+        status = sss_key_object_allocate_handle(&keyObject, keyid, kSSS_KeyPart_Pair, kSSS_CipherType_EC_NIST_P, 256, options);
         VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
 
         ChipLogDetail(Crypto, "Creating Nist256 key on SE05X !");

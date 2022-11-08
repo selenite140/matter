@@ -43,6 +43,210 @@ struct keyidFabIdMapping_t
     0,
 };
 
+
+#define ENABLE_PERSISTENT_FABRIC_KEY_TABLE 0
+
+#if ENABLE_PERSISTENT_FABRIC_KEY_TABLE
+
+#define SE05x_KEY_ID_LEN 4
+#define FABRIC_ID_LEN sizeof(FabricIndex)
+#define SE05X_FABRIC_KEYID_MAP_BINFILE_SIZE ((SE05x_KEY_ID_LEN + FABRIC_ID_LEN) * MAX_KEYID_SLOTS_FOR_FABRICS)
+
+/* Read data from 'kKeyId_fabricKey_table_keyid' binary file and populate keyidFabIdMapping */
+CHIP_ERROR readPersistentFabricKeyTable()
+{
+    sss_object_t PersistFabricKeyTableKeyObj          = { 0 };
+    sss_status_t status                               = kStatus_SSS_Fail;
+    uint8_t cert[SE05X_FABRIC_KEYID_MAP_BINFILE_SIZE] = {
+        0,
+    };
+    size_t certlen    = sizeof(cert);
+    size_t certBitLen = sizeof(cert) * 8;
+    size_t i          = 0;
+
+    se05x_sessionOpen();
+
+    status = sss_key_object_init(&PersistFabricKeyTableKeyObj, &gex_sss_chip_ctx.ks);
+    VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+    status = sss_key_object_get_handle(&PersistFabricKeyTableKeyObj, kKeyId_fabric_key_table_keyid);
+    if (status != kStatus_SSS_Success)
+    {
+        ChipLogProgress(Crypto, "SE05x: PersistentFabricKeyTable binary file not found. !!!");
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    status = sss_key_store_get_key(&gex_sss_chip_ctx.ks, &PersistFabricKeyTableKeyObj, cert, &certlen, &certBitLen);
+    VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+    if (certlen != 0 && certlen % (SE05x_KEY_ID_LEN + FABRIC_ID_LEN) == 0)
+    {
+        while ((i + (SE05x_KEY_ID_LEN + FABRIC_ID_LEN)) <= certlen)
+        {
+            uint32_t keyId          = ((cert[i] << 24) + (cert[i + 1] << 16) + (cert[i + 2] << 8) + (cert[i + 3] << 0));
+            FabricIndex fabricIndex = cert[i + 4];
+            i                       = i + (SE05x_KEY_ID_LEN + FABRIC_ID_LEN);
+
+            if(!IsValidFabricIndex(fabricIndex) || keyId == kKeyId_NotInitialized){
+                continue;
+            }
+
+            ChipLogProgress(Crypto, "SE05x: Found key-id %02x for fabric %02x in PersistentFabricKeyTable !!!", keyId, fabricIndex);
+
+            {
+                SE05x_Result_t exists = kSE05x_Result_NA;
+
+                VerifyOrReturnError(
+                    SM_OK ==
+                        Se05x_API_CheckObjectExists(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, keyId, &exists),
+                    CHIP_ERROR_INTERNAL);
+                if (exists != kSE05x_Result_SUCCESS)
+                {
+                    ChipLogProgress(Crypto, "SE05x: Key-id %02x not found in SE05x. Ignoring the key", keyId);
+                    continue;
+                }
+
+                Crypto::P256KeypairHSM * pkeyPair = Platform::New<Crypto::P256KeypairHSM>();
+                if (pkeyPair != nullptr)
+                {
+                    pkeyPair->SetKeyId(keyId);
+                    pkeyPair->provisioned_key = true; /* Set provisioned_key = true, to make sure key is not regenerated. */
+                    pkeyPair->Initialize();
+                    pkeyPair->provisioned_key =
+                        false; /* Set provisioned_key = false, to make sure key can be deleted when required */
+                }
+
+                uint32_t slotId = keyId - FABRIC_SE05X_KEYID_START;
+                if (slotId >= MAX_KEYID_SLOTS_FOR_FABRICS)
+                {
+                    ChipLogProgress(Crypto, "SE05x: Invalid slot id - %02x. Ignoring the respective key-id - %02x", slotId, keyId);
+                    continue;
+                }
+
+                if (keyidFabIdMapping[slotId].keyId != kKeyId_NotInitialized)
+                {
+                    ChipLogProgress(Crypto, "SE05x: Multiple keys found for slot id %02x. Overwriting the previous one !!!",
+                                    slotId);
+                }
+
+                ChipLogProgress(Crypto, "SE05x: Storing fabricIndex=%02x and key-id=%02x keyidFabIdMapping table !!!", fabricIndex,
+                                keyId);
+                keyidFabIdMapping[slotId].keyId       = keyId;
+                keyidFabIdMapping[slotId].fabricIndex = fabricIndex;
+                keyidFabIdMapping[slotId].isPending   = false;
+                keyidFabIdMapping[slotId].pkeyPair    = pkeyPair;
+            }
+        }
+    }
+    else
+    {
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR writeToPersistentFabricKeyTable(uint32_t keyId, FabricIndex fabricIndex)
+{
+    sss_object_t PersistFabricKeyTableKeyObj          = { 0 };
+    sss_status_t status                               = kStatus_SSS_Fail;
+    uint8_t cert[SE05X_FABRIC_KEYID_MAP_BINFILE_SIZE] = {
+        0,
+    };
+    size_t certlen      = sizeof(cert);
+    size_t certlen_bits = sizeof(cert) * 8;
+    size_t offset       = keyId - FABRIC_SE05X_KEYID_START;
+
+    se05x_sessionOpen();
+
+    status = sss_key_object_init(&PersistFabricKeyTableKeyObj, &gex_sss_chip_ctx.ks);
+    VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+    status = sss_key_object_get_handle(&PersistFabricKeyTableKeyObj, kKeyId_fabric_key_table_keyid);
+    if (status != kStatus_SSS_Success)
+    {
+        ChipLogProgress(Crypto, "SE05x: PersistentFabricKeyTable binary file not found. Creating one now !!!");
+
+        status = sss_key_object_allocate_handle(
+            &PersistFabricKeyTableKeyObj, kKeyId_fabric_key_table_keyid, kSSS_KeyPart_Default, kSSS_CipherType_Certificate,
+            ((SE05x_KEY_ID_LEN + FABRIC_ID_LEN) * MAX_KEYID_SLOTS_FOR_FABRICS), kKeyObject_Mode_Persistent);
+        VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+        // Set the key info in binary file data
+        cert[offset]     = (uint8_t)(keyId >> 24) & 0xFF;
+        cert[offset + 1] = (uint8_t)(keyId >> 16) & 0xFF;
+        cert[offset + 2] = (uint8_t)(keyId >> 8) & 0xFF;
+        cert[offset + 3] = (uint8_t)(keyId & 0xFF);
+        cert[offset + 4] = (uint8_t) fabricIndex;
+
+        status = sss_key_store_set_key(&gex_sss_chip_ctx.ks, &PersistFabricKeyTableKeyObj, cert, certlen, certlen * 8, NULL, 0);
+        VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+        ChipLogProgress(Crypto, "SE05x: PersistentFabricKeyTable Binary file created ( with fabric=%02x and key-id = %02xinfo)",
+                        fabricIndex, keyId);
+
+        return CHIP_NO_ERROR;
+    }
+
+    status = sss_key_store_get_key(&gex_sss_chip_ctx.ks, &PersistFabricKeyTableKeyObj, cert, &certlen, &certlen_bits);
+    VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+    // Set the key info in binary file data
+    cert[offset]     = (uint8_t)(keyId >> 24) & 0xFF;
+    cert[offset + 1] = (uint8_t)(keyId >> 16) & 0xFF;
+    cert[offset + 2] = (uint8_t)(keyId >> 8) & 0xFF;
+    cert[offset + 3] = (uint8_t)(keyId & 0xFF);
+    cert[offset + 4] = (uint8_t) fabricIndex;
+
+    status = sss_key_store_set_key(&gex_sss_chip_ctx.ks, &PersistFabricKeyTableKeyObj, cert, certlen, certlen * 8, NULL, 0);
+    VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+    ChipLogProgress(Crypto, "SE05x: PersistentFabricKeyTable Binary file updated ( added fabric=%02x and key-id = %02xinfo)",
+                    fabricIndex, keyId);
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR removeFromPersistentFabricKeyTable(uint32_t keyId, FabricIndex fabricIndex)
+{
+    sss_object_t PersistFabricKeyTableKeyObj          = { 0 };
+    sss_status_t status                               = kStatus_SSS_Fail;
+    uint8_t cert[SE05X_FABRIC_KEYID_MAP_BINFILE_SIZE] = {
+        0,
+    };
+    size_t certlen      = sizeof(cert);
+    size_t certlen_bits = sizeof(cert) * 8;
+    size_t offset       = keyId - FABRIC_SE05X_KEYID_START;
+
+    se05x_sessionOpen();
+
+    status = sss_key_object_init(&PersistFabricKeyTableKeyObj, &gex_sss_chip_ctx.ks);
+    VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+    status = sss_key_object_get_handle(&PersistFabricKeyTableKeyObj, kKeyId_fabric_key_table_keyid);
+    if (status != kStatus_SSS_Success)
+    {
+        ChipLogProgress(Crypto, "SE05x: PersistentFabricKeyTable binary file not found.!!!");
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    status = sss_key_store_get_key(&gex_sss_chip_ctx.ks, &PersistFabricKeyTableKeyObj, cert, &certlen, &certlen_bits);
+    VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+    // Remove the key info in binary file data
+    memset((cert + offset), 0, (SE05x_KEY_ID_LEN + FABRIC_ID_LEN));
+
+    status = sss_key_store_set_key(&gex_sss_chip_ctx.ks, &PersistFabricKeyTableKeyObj, cert, certlen, certlen * 8, NULL, 0);
+    VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+    ChipLogProgress(Crypto, "SE05x: PersistentFabricKeyTable Binary file updated ( removed fabric=%02x and key-id = %02xinfo)",
+                    fabricIndex, keyId);
+
+    return CHIP_NO_ERROR;
+}
+
+#endif //#if ENABLE_PERSISTENT_FABRIC_KEY_TABLE
+
 uint8_t getEmpytSlotId()
 {
     uint8_t i = 0;
@@ -55,6 +259,17 @@ uint8_t getEmpytSlotId()
         i++;
     }
     return i;
+}
+
+PersistentStorageOperationalKeystoreHSM::PersistentStorageOperationalKeystoreHSM()
+{
+#if ENABLE_PERSISTENT_FABRIC_KEY_TABLE
+    CHIP_ERROR err = readPersistentFabricKeyTable();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogProgress(Crypto, "Error in readPersistentFabricKeyTable");
+    }
+#endif //#if ENABLE_PERSISTENT_FABRIC_KEY_TABLE
 }
 
 void PersistentStorageOperationalKeystoreHSM::ResetPendingSlot()
@@ -112,6 +327,7 @@ CHIP_ERROR PersistentStorageOperationalKeystoreHSM::NewOpKeypairForFabric(Fabric
 
     // Key id is created as slotid + start offset of ops key id
     mPendingKeypair->SetKeyId(FABRIC_SE05X_KEYID_START + slotId);
+    mPendingKeypair->is_persistent = true;
 
     err = mPendingKeypair->Initialize();
     VerifyOrReturnError(err == CHIP_NO_ERROR, CHIP_ERROR_NO_MEMORY);
@@ -183,6 +399,14 @@ CHIP_ERROR PersistentStorageOperationalKeystoreHSM::CommitOpKeypairForFabric(Fab
     mIsPendingKeypairActive = false;
     mPendingFabricIndex     = kUndefinedFabricIndex;
 
+#if ENABLE_PERSISTENT_FABRIC_KEY_TABLE
+    CHIP_ERROR err = writeToPersistentFabricKeyTable(keyidFabIdMapping[slotId].keyId, keyidFabIdMapping[slotId].fabricIndex);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogProgress(Crypto, "Error in writeToPersistentFabricKeyTable");
+    }
+#endif //#if ENABLE_PERSISTENT_FABRIC_KEY_TABLE
+
     return CHIP_NO_ERROR;
 }
 
@@ -202,6 +426,14 @@ CHIP_ERROR PersistentStorageOperationalKeystoreHSM::RemoveOpKeypairForFabric(Fab
     {
         if (mapping.fabricIndex == fabricIndex)
         {
+#if ENABLE_PERSISTENT_FABRIC_KEY_TABLE
+            CHIP_ERROR err = removeFromPersistentFabricKeyTable(mapping.keyId, fabricIndex);
+            if (err != CHIP_NO_ERROR)
+            {
+                ChipLogProgress(Crypto, "Error in writeToPersistentFabricKeyTable");
+            }
+#endif //#if ENABLE_PERSISTENT_FABRIC_KEY_TABLE
+
             // Delete the keyPair associated with the fabric
             mapping.isPending = false;
             Platform::Delete<Crypto::P256KeypairHSM>(mapping.pkeyPair);

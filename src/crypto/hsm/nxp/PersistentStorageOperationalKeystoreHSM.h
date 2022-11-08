@@ -32,7 +32,7 @@ namespace chip {
 class PersistentStorageOperationalKeystoreHSM : public Crypto::OperationalKeystore
 {
 public:
-    PersistentStorageOperationalKeystoreHSM() = default;
+    PersistentStorageOperationalKeystoreHSM();
     virtual ~PersistentStorageOperationalKeystoreHSM() { Finish(); }
 
     // Non-copyable
