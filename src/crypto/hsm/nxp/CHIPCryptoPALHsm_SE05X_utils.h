@@ -47,7 +47,8 @@ enum keyid_values
     kKeyId_hmac_sha256_keyid,
     kKeyId_sha256_ecc_pub_keyid,
     kKeyId_case_ephemeral_keyid,
-    kKeyId_spake2p_target_secure_object,
+    kKeyId_spake2p_v_tgt_sec_obj,
+    kKeyId_spake2p_p_tgt_sec_obj,
     kKeyId_fabric_key_table_keyid,
 };
 

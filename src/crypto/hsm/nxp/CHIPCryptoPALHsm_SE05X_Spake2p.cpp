@@ -159,7 +159,11 @@ CHIP_ERROR create_init_crypto_obj(chip::Crypto::CHIP_SPAKE2P_ROLE role, hsm_pake
         const uint8_t zeros[16] = {
             0,
         };
-        uint32_t targetSecureObjectID = kKeyId_spake2p_target_secure_object;
+#if ENABLE_HSM_SPAKE_VERIFIER
+        uint32_t targetSecureObjectID = kKeyId_spake2p_v_tgt_sec_obj;
+#else
+        uint32_t targetSecureObjectID = kKeyId_spake2p_p_tgt_sec_obj;
+#endif
 
         status = sss_key_object_init(&keyObject, &gex_sss_chip_ctx.ks);
         VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
