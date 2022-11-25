@@ -134,12 +134,12 @@ CHIP_ERROR AppTask::Init()
 // Initialize device attestation config
 #if CONFIG_CHIP_K32W0_REAL_FACTORY_DATA
     // Initialize factory data provider
-    ReturnErrorOnFailure(K32W0FactoryDataProvider::GetDefaultInstance().Init());
+    ReturnErrorOnFailure(AppTask::FactoryDataProvider::GetDefaultInstance().Init());
 #if CHIP_DEVICE_CONFIG_ENABLE_DEVICE_INSTANCE_INFO_PROVIDER
-    SetDeviceInstanceInfoProvider(&K32W0FactoryDataProvider::GetDefaultInstance());
+	SetDeviceInstanceInfoProvider(&AppTask::FactoryDataProvider::GetDefaultInstance());
 #endif
-    SetDeviceAttestationCredentialsProvider(&K32W0FactoryDataProvider::GetDefaultInstance());
-    SetCommissionableDataProvider(&K32W0FactoryDataProvider::GetDefaultInstance());
+	SetDeviceAttestationCredentialsProvider(&AppTask::FactoryDataProvider::GetDefaultInstance());
+	SetCommissionableDataProvider(&AppTask::FactoryDataProvider::GetDefaultInstance());
 #else
 #ifdef ENABLE_HSM_DEVICE_ATTESTATION
     SetDeviceAttestationCredentialsProvider(Examples::GetExampleSe05xDACProvider());
@@ -583,14 +583,6 @@ void AppTask::StartOTAQuery(intptr_t arg)
     GetRequestorInstance()->TriggerImmediateQuery();
 }
 
-void AppTask::PostOTAResume()
-{
-    AppEvent event;
-    event.Type    = AppEvent::kOTAResume;
-    event.Handler = OTAResumeEventHandler;
-    sAppTask.PostEvent(&event);
-}
-
 void AppTask::OnScheduleInitOTA(chip::System::Layer * systemLayer, void * appState)
 {
     if (sIsDnssdPlatformInitialized)
@@ -668,11 +660,6 @@ void AppTask::MatterEventHandler(const ChipDeviceEvent * event, intptr_t)
     }
 
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
-    if (event->Type == DeviceEventType::kOtaStateChanged && event->OtaStateChanged.newState == kOtaSpaceAvailable)
-    {
-        sAppTask.PostOTAResume();
-    }
-
     if (event->Type == DeviceEventType::kDnssdPlatformInitialized)
     {
         K32W_LOG("Dnssd platform initialized.");
@@ -800,20 +787,6 @@ void AppTask::PostContactActionRequest(ContactSensorManager::Action aAction)
     event.ContactEvent.Action = static_cast<uint8_t>(aAction);
     event.Handler             = ContactActionEventHandler;
     PostEvent(&event);
-}
-
-void AppTask::OTAResumeEventHandler(void * aGenericEvent)
-{
-    AppEvent * aEvent = (AppEvent *) aGenericEvent;
-    if (aEvent->Type == AppEvent::kOTAResume)
-    {
-#if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
-        if (gDownloader.GetState() == OTADownloader::State::kInProgress)
-        {
-            gImageProcessor.TriggerNewRequestForData();
-        }
-#endif
-    }
 }
 
 void AppTask::PostEvent(const AppEvent * aEvent)

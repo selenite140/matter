@@ -19,7 +19,7 @@ import("${chip_root}/src/platform/nxp/${nxp_platform}/args.gni") # declares all 
 
 declare_args() {
   # Location of the rt SDK.
-  rt_sdk_root = ""
+  rt_sdk_root = "${chip_root}/third_party/nxp/rt_sdk/repo"
   hci_spinel_single_uart = false
   enable_otw_k32w0 = false
   #rt_nvm_component = "nvm_fwk"
@@ -27,6 +27,20 @@ declare_args() {
   wifi_enable_pta = false
   # RT platform
   rt_platform = ""
+  sdk_fsl_assert_support = true
+}
+
+declare_args() {
+  rt_core_sdk_root = "${rt_sdk_root}/core"
+}
+
+if (is_sdk_package || is_sdk_internal) {
+  rt_core_sdk_root = getenv("NXP_SDK_ROOT")
+  rt_sdk_root = getenv("NXP_SDK_ROOT")
+}
+
+if (!defined(rt_fwk_platform)) {
+  rt_fwk_platform = rt_platform
 }
 
 assert(rt_sdk_root != "", "rt_sdk_root must be specified")
@@ -163,9 +177,9 @@ template("rt_wifi") {
 
     sources += [
         # Wi-Fi
-        # "${rt_sdk_root}/middleware/wifi_nxp/dhcpd/dhcp-server-main.c",
-        # "${rt_sdk_root}/middleware/wifi_nxp/dhcpd/dhcp-server.c",
-        # "${rt_sdk_root}/middleware/wifi_nxp/dhcpd/dns-server.c",
+        "${rt_sdk_root}/middleware/wifi_nxp/dhcpd/dhcp-server-main.c",
+        "${rt_sdk_root}/middleware/wifi_nxp/dhcpd/dhcp-server.c",
+        "${rt_sdk_root}/middleware/wifi_nxp/dhcpd/dns-server.c",
         "${rt_sdk_root}/middleware/wifi_nxp/port/lwip/net.c",
         "${rt_sdk_root}/middleware/wifi_nxp/port/lwip/wifi_netif.c",
         "${rt_sdk_root}/middleware/wifi_nxp/cli/cli_utils.c",
@@ -198,7 +212,6 @@ template("rt_wifi") {
         "${rt_sdk_root}/middleware/wifi_nxp/wifidriver/mlan_wmm.c",
         "${rt_sdk_root}/middleware/wifi_nxp/wifidriver/wifi-debug.c",
         "${rt_sdk_root}/middleware/wifi_nxp/wifidriver/wifi-mem.c",
-        "${rt_sdk_root}/middleware/wifi_nxp/wifidriver/wifi-sdio.c",
         "${rt_sdk_root}/middleware/wifi_nxp/wifidriver/wifi-uap.c",
         "${rt_sdk_root}/middleware/wifi_nxp/wifidriver/wifi.c",
         "${rt_sdk_root}/middleware/wifi_nxp/wifidriver/wifi_pwrmgr.c",
@@ -229,35 +242,33 @@ template("rt_sdk") {
     _sdk_include_dirs = [
 #freertos includes
         "${rt_sdk_root}/rtos/freertos/freertos_kernel/include",
-        "${rt_sdk_root}/rtos/freertos/freertos_kernel/portable/GCC/ARM_CM4F",
 #CMSIS includes
-        "${rt_sdk_root}/core/CMSIS/Core/Include",
+        "${rt_core_sdk_root}/CMSIS/Core/Include",
 #SDK components
-        "${rt_sdk_root}/core/components/uart",
-        "${rt_sdk_root}/core/components/serial_manager",
-        "${rt_sdk_root}/core/components/lists",
-        "${rt_sdk_root}/core/components/osa",
-        "${rt_sdk_root}/core/components/common_task",
-        "${rt_sdk_root}/core/components/log",
-        "${rt_sdk_root}/core/components/timer_manager",
-        "${rt_sdk_root}/core/components/timer",
-        "${rt_sdk_root}/core/components/internal_flash",
-        "${rt_sdk_root}/core/components/button",
-        "${rt_sdk_root}/core/components/gpio",
-        "${rt_sdk_root}/core/components/phy/device/phyksz8081",
-        "${rt_sdk_root}/core/components/phy",
-        "${rt_sdk_root}/core/components/phy/mdio/enet",
-        "${rt_sdk_root}/core/components/wifi_bt_module/AzureWave/tx_pwr_limits",
-        "${rt_sdk_root}/core/components/wifi_bt_module/Murata/tx_pwr_limits",
-        "${rt_sdk_root}/core/components/wifi_bt_module/template",
-        "${rt_sdk_root}/core/components/messaging",
-        "${rt_sdk_root}/core/components/mem_manager",
-        "${rt_sdk_root}/core/components/flash/mflash",
+        "${rt_core_sdk_root}/components/uart",
+        "${rt_core_sdk_root}/components/serial_manager",
+        "${rt_core_sdk_root}/components/lists",
+        "${rt_core_sdk_root}/components/osa",
+        "${rt_core_sdk_root}/components/common_task",
+        "${rt_core_sdk_root}/components/log",
+        "${rt_core_sdk_root}/components/timer_manager",
+        "${rt_core_sdk_root}/components/timer",
+        "${rt_core_sdk_root}/components/internal_flash",
+        "${rt_core_sdk_root}/components/button",
+        "${rt_core_sdk_root}/components/gpio",
+        "${rt_core_sdk_root}/components/phy/device/phyksz8081",
+        "${rt_core_sdk_root}/components/phy",
+        "${rt_core_sdk_root}/components/wifi_bt_module/AzureWave/tx_pwr_limits",
+        "${rt_core_sdk_root}/components/wifi_bt_module/Murata/tx_pwr_limits",
+        "${rt_core_sdk_root}/components/wifi_bt_module/template",
+        "${rt_core_sdk_root}/components/messaging",
+        "${rt_core_sdk_root}/components/mem_manager",
+        "${rt_core_sdk_root}/components/flash/mflash",
 #Framework files
         "${rt_sdk_root}/middleware/wireless/framework/FunctionLib",
         "${rt_sdk_root}/middleware/wireless/framework/Common",
-        "${rt_sdk_root}/middleware/wireless/framework/boards/${rt_platform}",
-        "${rt_sdk_root}/middleware/wireless/framework/platform/${rt_platform}",
+        "${rt_sdk_root}/middleware/wireless/framework/platform/${rt_fwk_platform}",
+        "${rt_sdk_root}/middleware/wireless/framework/platform/include",
         "${rt_sdk_root}/middleware/wireless/framework/FileSystem",
 #littlefs
         "${rt_sdk_root}/middleware/littlefs",
@@ -268,7 +279,6 @@ template("rt_sdk") {
       _sdk_include_dirs += [
         "${rt_sdk_root}/middleware/wireless/framework/OtaSupport/Interface",
         "${rt_sdk_root}/middleware/wireless/framework/OtaSupport/Source",
-        "${rt_sdk_root}/middleware/wireless/framework/platform/${rt_platform}/",
         ]
     }
 
@@ -363,13 +373,6 @@ template("rt_sdk") {
 
     if (chip_with_ot_cli == 1) {
       defines += [ "CHIP_DEVICE_CONFIG_THREAD_ENABLE_CLI=1" ]
-      #When ot_cli is enabled the debug console should be moved in UART2
-      defines += [
-        "BOARD_DEBUG_UART_BASEADDR=LPUART2",
-        "BOARD_DEBUG_UART_INSTANCE=2U",
-        "BOARD_UART_IRQ=LPUART2_IRQn",
-        "BOARD_UART_IRQ_HANDLER=LPUART2_IRQHandler"
-      ]
     }
 
     if (chip_enable_pairing_autostart == 1) {
@@ -396,6 +399,7 @@ template("rt_sdk") {
       "-Wno-implicit-fallthrough",
       "-Wno-stringop-truncation",
       "-Wno-unused-variable",
+      "-Wno-format-truncation",
     ]
 
 
@@ -441,34 +445,25 @@ template("rt_sdk") {
     "${rt_sdk_root}/rtos/freertos/freertos_kernel/event_groups.c",
     "${rt_sdk_root}/rtos/freertos/freertos_kernel/croutine.c",
     "${rt_sdk_root}/rtos/freertos/freertos_kernel/list.c",
-    "${rt_sdk_root}/rtos/freertos/freertos_kernel/portable/GCC/ARM_CM4F/port.c",
     "${rt_sdk_root}/rtos/freertos/freertos_kernel/queue.c",
     "${rt_sdk_root}/rtos/freertos/freertos_kernel/stream_buffer.c",
     "${rt_sdk_root}/rtos/freertos/freertos_kernel/tasks.c",
     "${rt_sdk_root}/rtos/freertos/freertos_kernel/timers.c",
-    "${rt_sdk_root}/rtos/freertos/freertos_kernel/portable/MemMang/heap_4.c",
 
 #SDK components
-    "${rt_sdk_root}/core/components/serial_manager/fsl_component_serial_manager.c",
-    "${rt_sdk_root}/core/components/serial_manager/fsl_component_serial_port_uart.c",
-    "${rt_sdk_root}/core/components/uart/fsl_adapter_lpuart.c",
-    "${rt_sdk_root}/core/components/lists/fsl_component_generic_list.c",
-    "${rt_sdk_root}/core/components/osa/fsl_os_abstraction_free_rtos.c",
-    "${rt_sdk_root}/core/components/log/fsl_component_log.c",
-    "${rt_sdk_root}/core/components/log/fsl_component_log_backend_debugconsole.c",
-    "${rt_sdk_root}/core/components/timer_manager/fsl_component_timer_manager.c",
-    "${rt_sdk_root}/core/components/timer/fsl_adapter_pit.c",
-    "${rt_sdk_root}/core/components/internal_flash/fsl_adapter_flexspi_nor_flash.c",
-    "${rt_sdk_root}/core/components/button/fsl_component_button.c",
-    "${rt_sdk_root}/core/components/gpio/fsl_adapter_igpio.c",
-    "${rt_sdk_root}/core/components/phy/device/phyksz8081/fsl_phyksz8081.c",
-    "${rt_sdk_root}/core/components/phy/mdio/enet/fsl_enet_mdio.c",
-    "${rt_sdk_root}/core/components/messaging/fsl_component_messaging.c",
-    "${rt_sdk_root}/core/components/mem_manager/fsl_component_mem_manager.c",
+    "${rt_core_sdk_root}/components/serial_manager/fsl_component_serial_manager.c",
+    "${rt_core_sdk_root}/components/serial_manager/fsl_component_serial_port_uart.c",
+    "${rt_core_sdk_root}/components/lists/fsl_component_generic_list.c",
+    "${rt_core_sdk_root}/components/osa/fsl_os_abstraction_free_rtos.c",
+    "${rt_core_sdk_root}/components/log/fsl_component_log.c",
+    "${rt_core_sdk_root}/components/log/fsl_component_log_backend_debugconsole.c",
+    "${rt_core_sdk_root}/components/timer_manager/fsl_component_timer_manager.c",
+    "${rt_core_sdk_root}/components/button/fsl_component_button.c",
+    "${rt_core_sdk_root}/components/phy/device/phyksz8081/fsl_phyksz8081.c",
+    "${rt_core_sdk_root}/components/messaging/fsl_component_messaging.c",
 #Framework files
     "${rt_sdk_root}/middleware/wireless/framework/FunctionLib/FunctionLib.c",
-    "${rt_sdk_root}/middleware/wireless/framework/boards/${rt_platform}/board_comp.c",
-    "${rt_sdk_root}/middleware/wireless/framework/platform/${rt_platform}/fwk_platform.c",
+    "${rt_sdk_root}/middleware/wireless/framework/platform/${rt_fwk_platform}/fwk_platform.c",
     ]
 
 #OtaSupport files
@@ -477,7 +472,7 @@ template("rt_sdk") {
         "${rt_sdk_root}/middleware/wireless/framework/OtaSupport/Source/OtaSupport.c",
         "${rt_sdk_root}/middleware/wireless/framework/OtaSupport/Source/OtaPrivate.h",
         "${rt_sdk_root}/middleware/wireless/framework/OtaSupport/Source/ExternalMflash.c",
-        "${rt_sdk_root}/middleware/wireless/framework/platform/${rt_platform}/fwk_platform_ota.c",
+        "${rt_sdk_root}/middleware/wireless/framework/platform/${rt_fwk_platform}/fwk_platform_ota.c",
         ]
     }
 
@@ -490,7 +485,7 @@ template("rt_sdk") {
       #littlefs
       "${rt_sdk_root}/middleware/littlefs/lfs.c",
       "${rt_sdk_root}/middleware/littlefs/lfs_util.c",
-      "${rt_sdk_root}/middleware/wireless/framework/platform/${rt_platform}/fwk_platform_flash.c",
+      "${rt_sdk_root}/middleware/wireless/framework/platform/${rt_fwk_platform}/fwk_platform_flash.c",
       "${rt_sdk_root}/middleware/wireless/framework/FileSystem/fwk_filesystem.c",
     ]
 

@@ -16,6 +16,7 @@
  */
 
 #include <platform/internal/CHIPDeviceLayerInternal.h>
+#include <openthread/platform/memory.h>
 
 #include <platform/nxp/k32w/common/RamStorage.h>
 
@@ -39,7 +40,11 @@ void RamStorage::FreeBuffer()
 {
     if (sBuffer)
     {
-        free(sBuffer);
+        if (sBuffer->buffer)
+        {
+            otPlatFree(sBuffer->buffer);
+        }
+        otPlatFree(sBuffer);
         sBuffer = nullptr;
     }
 }
@@ -64,7 +69,7 @@ CHIP_ERROR RamStorage::Write(uint16_t aKey, const uint8_t * aValue, uint16_t aVa
     // Delete all occurrences of "key" and resize buffer if needed
     // before scheduling writing of new value.
     ramStorageDelete(sBuffer, aKey, -1);
-    status = ramStorageResize(&sBuffer, aKey, aValue, aValueLength);
+    status = ramStorageResize(sBuffer, aKey, aValue, aValueLength);
     SuccessOrExit(err = MapStatusToChipError(status));
     status = ramStorageSet(sBuffer, aKey, aValue, aValueLength);
     SuccessOrExit(err = MapStatusToChipError(status));

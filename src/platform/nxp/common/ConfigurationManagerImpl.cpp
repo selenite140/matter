@@ -97,6 +97,31 @@ CHIP_ERROR ConfigurationManagerImpl::GetPrimaryWiFiMACAddress(uint8_t * buf)
 #endif
 }
 
+CHIP_ERROR ConfigurationManagerImpl::GetUniqueId(char * buf, size_t bufSize)
+{
+    CHIP_ERROR err;
+    size_t uniqueIdLen = 0; // without counting null-terminator
+    err                = ReadConfigValueStr(NXPConfig::kConfigKey_UniqueId, buf, bufSize, uniqueIdLen);
+
+    ReturnErrorOnFailure(err);
+
+    ReturnErrorCodeIf(uniqueIdLen >= bufSize, CHIP_ERROR_BUFFER_TOO_SMALL);
+    ReturnErrorCodeIf(buf[uniqueIdLen] != 0, CHIP_ERROR_INVALID_STRING_LENGTH);
+
+    return err;
+}
+
+CHIP_ERROR ConfigurationManagerImpl::StoreUniqueId(const char * uniqueId, size_t uniqueIdLen)
+{
+    return WriteConfigValueStr(NXPConfig::kConfigKey_UniqueId, uniqueId, uniqueIdLen);
+}
+
+CHIP_ERROR ConfigurationManagerImpl::GenerateUniqueId(char * buf, size_t bufSize)
+{
+    uint64_t randomUniqueId = Crypto::GetRandU64();
+    return Encoding::BytesToUppercaseHexString(reinterpret_cast<uint8_t *>(&randomUniqueId), sizeof(uint64_t), buf, bufSize);
+}
+
 bool ConfigurationManagerImpl::CanFactoryReset()
 {
     // TODO: query the application to determine if factory reset is allowed.
@@ -220,15 +245,8 @@ void ConfigurationManagerImpl::DoFactoryReset(intptr_t arg)
 
 #endif // CHIP_DEVICE_CONFIG_ENABLE_THREAD
 
-    ChipLogProgress(DeviceLayer, "System restarting");
-    // Delete all persistent data
-    NXPConfig::RunSystemIdleTask();
-    PlatformManagerImpl::SaveSettings();
-    // Restart the system.
-    NVIC_SystemReset();
-    while (1)
-    {
-    }
+    /* Schedule a reset in the next idle call */
+    PlatformMgrImpl().ScheduleResetInIdle();
 }
 
 ConfigurationManager & ConfigurationMgrImpl()

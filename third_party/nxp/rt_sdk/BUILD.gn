@@ -44,7 +44,7 @@ rt_sdk("nxp_sdk") {
   sources += ["${rt_platform_dir}/board/peripherals.c"]
 
   #Adding pre-include files
-  cflags += ["-include" + rebase_path("${rt_platform_dir}/app/transceiver/app_matter_config.h", root_build_dir)]
+  cflags += ["-include" + rebase_path("${chip_root}/examples/platform/nxp/common/app/transceiver/app_matter_config.h", root_build_dir)]
 
   if (iw416_transceiver) {
     defines += [ "WIFI_IW416_BOARD_AW_AM510_USD", "SDIO_ENABLED" ]
@@ -61,6 +61,7 @@ rt_sdk("nxp_sdk") {
 
   if (k32w0_transceiver) {
     defines += ["K32W061_TRANSCEIVER"]
+    sources += ["${rt_sdk_root}/middleware/wireless/framework/platform/rt/k32w0/fwk_platform_coex.c"]
   }
 
   # Add a dep to SDK driver files

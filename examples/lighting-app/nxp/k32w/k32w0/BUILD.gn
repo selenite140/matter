@@ -50,6 +50,7 @@ k32w0_sdk("sdk") {
     "${k32w0_platform_dir}/app/project_include",
     "${k32w0_platform_dir}/app/support",
     "${k32w0_platform_dir}/util/include",
+    "${k32w0_platform_dir}/common",
   ]
 
   if (chip_with_se05x == 1) {
@@ -80,6 +81,18 @@ k32w0_executable("light_app") {
   ]
 
   public = [ "${chip_root}/src/platform/nxp/k32w/k32w0/DefaultTestEventTriggerDelegate.h" ]
+
+  if (chip_with_factory_data == 1 && use_custom_factory_provider == 1) {
+    sources += [
+      "${k32w0_platform_dir}/common/CustomFactoryDataProvider.h",
+      "${k32w0_platform_dir}/common/CustomFactoryDataProvider.cpp",
+    ]
+
+    defines = [
+      "CHIP_DEVICE_CONFIG_USE_CUSTOM_PROVIDER=1",
+      "CHIP_DEVICE_CONFIG_CUSTOM_PROVIDER_NUMBER_IDS=3"
+    ]
+  }
 
   deps = [
     ":sdk",

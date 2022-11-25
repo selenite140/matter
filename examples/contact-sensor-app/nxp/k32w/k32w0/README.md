@@ -259,6 +259,11 @@ generate_nxp_chip_factory_bin.py script. The discriminator is 14014 and the
 passcode is 1000. These demo certificates are working with the CDs installed in
 CHIPProjectConfig.h.
 
+Regarding factory data provider, there are two options:
+* use the default factory data provider: `K32W0FactoryDataProvider` by setting `chip_with_factory_data=1` in the gn build command.
+* use a custom factory data provider: please see
+[Guide for implementing a custom factory data provider](../../../../platform/nxp/k32w/k32w0/common/README.md). This can be enabled when `chip_with_factory_data=1` by setting `use_custom_factory_provider=1` in the gn build command.
+
 <a name="flashdebug"></a>
 
 ## Flashing and debugging
@@ -505,6 +510,7 @@ user@computer1:~/connectedhomeip$ : ./src/app/ota_image_tool.py create -v 0xDEAD
 user@computer1:~/connectedhomeip$ : rm -rf /tmp/chip_*
 user@computer1:~/connectedhomeip$ : ./out/ota-provider-app/chip-ota-provider-app -f chip-k32w0x-light-example.ota
 ```
+A note regarding OTA image header version (`-vn` option). An application binary has its own software version (given by `CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION`). For having a correct OTA process, the OTA header version should be the same as the binary embedded software version. A user can set a custom software version in the gn build args by setting `chip_software_version` to the wanted version.
 
 Build Linux chip-tool:
 

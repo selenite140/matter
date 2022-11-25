@@ -25,8 +25,7 @@ struct AppEvent
 {
     enum AppEventTypes
     {
-        kEventType_Button = 0,
-        kEventType_Timer,
+        kEventType_Timer = 0,
         kEventType_TurnOn,
         kEventType_Install,
     };
@@ -35,11 +34,6 @@ struct AppEvent
 
     union
     {
-        struct
-        {
-            uint8_t PinNo;
-            uint8_t Action;
-        } ButtonEvent;
         struct
         {
             void * Context;

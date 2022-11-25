@@ -33,6 +33,6 @@ manifest:
     revision: 41ee50155049d52579b9acc1a19880c78ec07f73
     path: middleware/edgefast_bluetooth
   - name: framework
-    url: https://github.com/NXP/mcux-sdk-middleware-connectivity-framework
-    revision: 2049f3f91a3a5c5909bdf41d0faaf3fad3eef0ca
+    url: https://github.com/NXP/mcux-sdk-middleware-connectivity-framework.git
+    revision: 99d867efa1b7f8c4b90862478dd
     path: middleware/wireless/framework  

@@ -249,6 +249,11 @@ generate_nxp_chip_factory_bin.py script. The discriminator is 14014 and the
 passcode is 1000. These demo certificates are working with the CDs installed in
 CHIPProjectConfig.h.
 
+Regarding factory data provider, there are two options:
+* use the default factory data provider: `K32W0FactoryDataProvider` by setting `chip_with_factory_data=1` in the gn build command.
+* use a custom factory data provider: please see
+[Guide for implementing a custom factory data provider](../../../../platform/nxp/k32w/k32w0/common/README.md). This can be enabled when `chip_with_factory_data=1` by setting `use_custom_factory_provider=1` in the gn build command.
+
 <a name="flashdebug"></a>
 
 ## Flashing and debugging

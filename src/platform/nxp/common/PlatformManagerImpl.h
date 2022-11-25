@@ -48,6 +48,9 @@ class PlatformManagerImpl final : public PlatformManager, public Internal::Gener
 public:
     // ===== Platform-specific members that may be accessed directly by the application.
 
+    void Reset();
+    void ScheduleResetInIdle(void);
+    bool GetResetInIdleValue(void);
     void HardwareInit(void);
     static void IdleHook(void);
     static void SaveSettings(void);
@@ -66,6 +69,7 @@ private:
     friend PlatformManagerImpl & PlatformMgrImpl(void);
     friend class Internal::BLEManagerImpl;
 
+    bool resetInIdle = false;
     static PlatformManagerImpl sInstance;
 
     using Internal::GenericPlatformManagerImpl_FreeRTOS<PlatformManagerImpl>::PostEventFromISR;

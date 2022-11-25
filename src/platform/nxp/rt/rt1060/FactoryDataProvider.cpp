@@ -72,6 +72,8 @@ extern "C" {
 #define DISCRIMINATOR_ID 7
 #define MAX_KEY_LEN 32
 #define BLOCK_SIZE_16_BYTES 16
+#define BLOCK_SIZE_4_BYTES 4
+#define SHA256_OUTPUT_SIZE 32
 
 /* Grab symbol for the base address from the linker file. */
 extern uint32_t __FACTORY_DATA_START_OFFSET[];
@@ -156,7 +158,11 @@ CHIP_ERROR FactoryDataProvider::Init(DataReaderEncryptedDCP *encryptedReader)
     status_t status;
     uint32_t factoryDataAddress = (uint32_t)__FACTORY_DATA_START_OFFSET;
     uint32_t factoryDataSize = (uint32_t)__FACTORY_DATA_SIZE;
+    uint32_t sizeOfFactoryData = 0;
     uint8_t currentBlock[BLOCK_SIZE_16_BYTES];
+    uint8_t hashReadFromFlash[BLOCK_SIZE_4_BYTES];
+    uint8_t calculatedHash[SHA256_OUTPUT_SIZE];
+    size_t outputHashSize;
     uint16_t i;
     CHIP_ERROR res;
 
@@ -165,6 +171,24 @@ CHIP_ERROR FactoryDataProvider::Init(DataReaderEncryptedDCP *encryptedReader)
 
     if (status != kStatus_Success || factoryDataSize > sizeof(factoryDataRamBuffer))
         return CHIP_ERROR_INTERNAL;
+
+    /* Read hash saved in flash */
+    if (mflash_drv_read(factoryDataAddress, (uint32_t *)&hashReadFromFlash[0], sizeof(hashReadFromFlash)) != kStatus_Success)
+    {
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    /* Update address to start after hash to read size */
+    factoryDataAddress += BLOCK_SIZE_4_BYTES;
+
+    /* Read size of data saved in flash to be used in calculating the hash */
+    if (mflash_drv_read(factoryDataAddress, (uint32_t *)&sizeOfFactoryData, sizeof(sizeOfFactoryData)) != kStatus_Success)
+    {
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    /* Update address to start after hash to read factory data */
+    factoryDataAddress += BLOCK_SIZE_4_BYTES;
 
     /* Load the buffer into RAM by reading each 16 bytes blocks */
     for (i=0; i<(factoryDataSize/BLOCK_SIZE_16_BYTES); i++)
@@ -186,6 +210,16 @@ CHIP_ERROR FactoryDataProvider::Init(DataReaderEncryptedDCP *encryptedReader)
             /* Store the block unencrypted */
             memcpy(&factoryDataRamBuffer[i*BLOCK_SIZE_16_BYTES], &currentBlock[0], sizeof(currentBlock));
         }
+    }
+
+    /* Calculate SHA256 value over the factory data and compare with stored value */
+    res = encryptedReader->Hash256(&factoryDataRamBuffer[0], sizeOfFactoryData, &calculatedHash[0], &outputHashSize);
+    if (res != CHIP_NO_ERROR)
+        return res;
+
+    if (memcmp(&calculatedHash[0], &hashReadFromFlash[0], BLOCK_SIZE_4_BYTES) != 0)
+    {
+        return CHIP_ERROR_INTERNAL;
     }
 
     if (SearchForId(VERIFIER_ID, NULL, 0, len) == NULL)

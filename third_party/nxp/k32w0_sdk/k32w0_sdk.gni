@@ -40,6 +40,7 @@ declare_args() {
   chip_with_high_power = 0
   chip_with_factory_data = 0
   use_fro_32k = 0
+  use_custom_factory_provider = 0
 }
 
 assert(k32w0_sdk_root != "", "k32w0_sdk_root must be specified")
@@ -72,6 +73,10 @@ template("k32w0_sdk") {
       (invoker.chip_detail_logging == false && invoker.chip_progress_logging == false &&
        invoker.chip_automation_logging == false && invoker.chip_error_logging == false),
       "Please disable all logs when low power is enabled!")
+
+  assert(
+    use_custom_factory_provider == 0 || chip_with_factory_data == 1,
+    "Please set chip_with_factory_data=1 if using custom factory provider.")
 
   if (build_for_k32w041am == 1 || build_for_k32w041a == 1 ||
       build_for_k32w041 == 1) {

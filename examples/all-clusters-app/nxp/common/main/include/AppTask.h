@@ -44,6 +44,14 @@ public:
     void PostTurnOnActionRequest(int32_t aActor, ClusterManager::Action_t aAction);
     void PostEvent(const AppEvent * event);
 
+    /* Commissioning handlers */
+    void StartCommissioningHandler(void);
+    void StopCommissioningHandler(void);
+    void SwitchCommissioningStateHandler(void);
+
+    /* FactoryResetHandler */
+    void FactoryResetHandler(void);
+
     void UpdateClusterState(void);
 
 private:
@@ -54,24 +62,17 @@ private:
     static void ActionInitiated(ClusterManager::Action_t aAction, int32_t aActor);
     static void ActionCompleted(ClusterManager::Action_t aAction);
 
-    void CancelTimer(void);
-
     void DispatchEvent(AppEvent * event);
 
-    static void FunctionTimerEventHandler(AppEvent * aEvent);
-    static void ClusterActionEventHandler(AppEvent * aEvent);
-    static void ResetActionEventHandler(AppEvent * aEvent);
-    static void BleHandler(AppEvent * aEvent);
-    static void InstallEventHandler(AppEvent * aEvent);
-
-    static void ButtonEventHandler(uint8_t pin_no, uint8_t button_action);
-    static void TimerEventHandler(TimerHandle_t xTimer);
-
-    static void ThreadProvisioningHandler(const chip::DeviceLayer::ChipDeviceEvent * event, intptr_t arg);
-
-    void StartTimer(uint32_t aTimeoutInMs);
-
+    /* Functions that would be called in the Matter task context */
+    static void StartCommissioning(intptr_t arg);
+    static void StopCommissioning(intptr_t arg);
+    static void SwitchCommissioningState(intptr_t arg);
+    static void FactoryReset(intptr_t arg);
     static void InitServer(intptr_t arg);
+
+    /* Functions that would be called in the App task context */
+    static void ClusterActionEventHandler(AppEvent * aEvent);
 
     enum Function_t
     {
@@ -84,9 +85,6 @@ private:
     } Function;
 
     Function_t mFunction;
-    bool mResetTimerActive;
-    BUTTON_HANDLE_DEFINE(sdkButtonHandle);
-    static button_status_t SdkButtonCallback(void *buttonHandle, button_callback_message_t *message, void *callbackParam);
 
     static AppTask sAppTask;
 };

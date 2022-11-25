@@ -33,6 +33,7 @@
 #include "DiagnosticDataProviderImpl.h"
 #include "fsl_adapter_rng.h"
 #include "ksdk_mbedtls.h"
+#include "fsl_os_abstraction.h"
 
 #include <lwip/tcpip.h>
 
@@ -42,6 +43,7 @@
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include "ot_platform_common.h"
+#include "fwk_platform_ot.h"
 #endif
 
 #if !CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_ENABLE_WPA
@@ -170,7 +172,7 @@ extern "C" void vApplicationIdleHook(void)
 extern "C" void __wrap_exit (int __status)
 {
     ChipLogError(DeviceLayer, "======> error exit function !!!");
-    while (1);
+    assert(0);
 }
 
 namespace chip {
@@ -230,11 +232,6 @@ CHIP_ERROR PlatformManagerImpl::WiFiInterfaceInit(void)
         ChipLogProgress(DeviceLayer, "WLAN initialized");
     }
 
-#if defined(SD8801) && CHIP_ENABLE_OPENTHREAD
-    /* All done, so re-enable the coexistence mechanism on the RCP */
-    otPlatRadioSetCoexEnabled(NULL, true);
-#endif
-
 #if WIFI_PTA_ENABLED && (CHIP_ENABLE_OPENTHREAD)
     if (result == CHIP_NO_ERROR)
     {
@@ -244,6 +241,15 @@ CHIP_ERROR PlatformManagerImpl::WiFiInterfaceInit(void)
             ChipLogError(DeviceLayer, "Failed to initialize Wi-Fi and OpenThread coexistence");
         }
     }
+#endif
+#if defined(SD8801) && CHIP_ENABLE_OPENTHREAD
+    /*
+     * Re-enabling the coexistence is done here because enabling it too fast
+     * can lead to unexpected hangs of the coexistence mechanism. Up to this point,
+     * all the 15.4 requests will be 'pass-through' i.e. will always be granted
+     * access.
+     */
+    otPlatRadioSetCoexEnabled(NULL, true);
 #endif
 
     return result;
@@ -327,6 +333,7 @@ CHIP_ERROR PlatformManagerImpl::_InitChipStack(void)
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
     otPlatRadioInitSpinelInterface();
+    PLATFORM_InitOt();
     /*
      * Initialize the RCP here: the WiFi initialization requires to enable/disable
      * coexistence through the Spinel interface; as such, the otPlatRadioInit() call
@@ -385,20 +392,57 @@ void PlatformManagerImpl::SaveSettings(void)
 
 void PlatformManagerImpl::IdleHook(void)
 {
+    bool isResetScheduled = PlatformMgrImpl().GetResetInIdleValue();
+    if (isResetScheduled)
+    {
+        /*
+        * In case a reset in IDLE has been scheduled
+        * Disable IRQs so that the idle task won't be preempted until the reset
+        */
+        OSA_InterruptDisable();
+    }
+
     chip::DeviceLayer::Internal::NXPConfig::RunSystemIdleTask();
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
     SaveSettings();
-
-    /* Apply reset if it was requested, better to do that after filesystem writes */
-    otPlatResetIdle();
 #endif
 
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
     /* Resume OTA Transactions in Idle task */
     OTA_TransactionResume();
 #endif
+
+    /*
+    * In case a reset in idle operation has been posted,
+    * reset the device after having run the idle function
+    */
+    if (isResetScheduled)
+    {
+        PlatformMgrImpl().Reset();
+    }
 }
+
+void PlatformManagerImpl::Reset(void)
+{
+    ChipLogProgress(DeviceLayer, "System restarting");
+    // Restart the system.
+    NVIC_SystemReset();
+    while (1)
+    {
+    }
+}
+
+void PlatformManagerImpl::ScheduleResetInIdle(void)
+{
+    resetInIdle = true;
+}
+
+bool PlatformManagerImpl::GetResetInIdleValue(void)
+{
+    return resetInIdle;
+}
+
 
 } // namespace DeviceLayer
 } // namespace chip

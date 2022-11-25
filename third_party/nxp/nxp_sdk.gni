@@ -17,6 +17,9 @@ declare_args() {
     chip_with_ot_cli = 0
     chip_with_factory_data = 0
     chip_enable_pairing_autostart = 1
+    # By default sdk github is expected to be built #
+    is_sdk_package = false
+    is_sdk_internal = false
 }
 
 declare_args() {

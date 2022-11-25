@@ -47,6 +47,7 @@ class DataReaderEncryptedDCP
         CHIP_ERROR SetEncryptionMode(EncryptionMode mode);
         CHIP_ERROR SetCbcInitialVector(const uint8_t *iv, uint16_t ivSize);
         CHIP_ERROR ReadData(uint8_t * desBuff, uint8_t * sourceAddr, uint16_t sizeToRead);
+        CHIP_ERROR Hash256(const uint8_t *input, size_t inputSize, uint8_t *output, size_t *outputSize);
 };
 
 } // namespace DeviceLayer

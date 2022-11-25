@@ -147,5 +147,22 @@ CHIP_ERROR DataReaderEncryptedDCP::ReadData(uint8_t * desBuff, uint8_t * sourceA
     return CHIP_NO_ERROR;
 }
 
+CHIP_ERROR DataReaderEncryptedDCP::Hash256(const uint8_t *input, size_t inputSize, uint8_t *output, size_t *outputSize)
+{
+    status_t status;
+    dcp_handle_t m_handle;
+
+    m_handle.channel    = kDCP_Channel0;
+    m_handle.swapConfig = kDCP_NoSwap;
+    m_handle.keySlot = kDCP_KeySlot0;
+
+    status = DCP_HASH(DCP, &m_handle, kDCP_Sha256, input, inputSize, output, outputSize);
+
+    if (status != kStatus_Success)
+        return CHIP_ERROR_INTERNAL;
+
+    return CHIP_NO_ERROR;
+}
+
 } // namespace DeviceLayer
 } // namespace chip

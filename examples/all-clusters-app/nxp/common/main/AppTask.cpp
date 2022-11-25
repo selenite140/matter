@@ -18,7 +18,6 @@
  */
 #include "AppTask.h"
 #include "AppEvent.h"
-//#include "LEDWidget.h"
 #include "lib/support/ErrorStr.h"
 #include <app/server/Server.h>
 #include <app/server/Dnssd.h>
@@ -43,14 +42,10 @@
 #include <app-common/zap-generated/cluster-id.h>
 #include <app/util/attribute-storage.h>
 
-#include "board.h"
-#include "fsl_component_timer_manager.h"
-#include "fsl_clock.h"
 #include "application_config.h"
-#include "board_comp.h"
-#include "fwk_platform.h"
 
-#include "MatterCli.h"
+#include "AppMatterCli.h"
+#include "AppMatterButton.h"
 
 #if CHIP_DEVICE_CONFIG_ENABLE_OTA_REQUESTOR
 #include "OTARequestorInitiator.h"
@@ -69,8 +64,6 @@
 #define APP_TASK_STACK_SIZE (4096)
 #define APP_TASK_PRIORITY 2
 #define APP_EVENT_QUEUE_SIZE 10
-
-TimerHandle_t sFunctionTimer; // FreeRTOS app sw timer.
 
 static QueueHandle_t sAppEventQueue;
 
@@ -161,15 +154,7 @@ void AppTask::InitServer(intptr_t arg)
 
 CHIP_ERROR AppTask::Init()
 {
-    //chip::app::Dnssd::StartServer();
-    //chip::app::Dnssd::AdvertiseCommissionableNode();
-    
-    //chip::app::Dnssd::ServiceAdvertiser::Instance().Init();
-    
     CHIP_ERROR err = CHIP_NO_ERROR;
-    button_config_t buttonConfig;
-    button_status_t bStatus;
-    timer_status_t tStatus; 
 
     // Init ZCL Data Model and start server
     PlatformMgr().ScheduleWork(InitServer, 0);
@@ -224,43 +209,6 @@ CHIP_ERROR AppTask::Init()
     // QR code will be used with CHIP Tool
     PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kOnNetwork));
 
-    /* Init the SDK timer manager */
-    tStatus = PLATFORM_InitTimerManager();
-    if (tStatus != kStatus_TimerSuccess)
-    {
-        err = CHIP_ERROR_UNEXPECTED_EVENT;
-        ChipLogError(DeviceLayer, "tmr init error");       
-    }
-
-    /* Init the SDK Button component */
-    bStatus = BOARD_InitButton((button_handle_t)sdkButtonHandle);
-    if (bStatus != kStatus_BUTTON_Success)
-    {
-        err = CHIP_ERROR_UNEXPECTED_EVENT;
-        ChipLogError(DeviceLayer, "button init error");       
-    }
-    bStatus = BUTTON_InstallCallback((button_handle_t)sdkButtonHandle, AppTask::SdkButtonCallback, this);
-
-    if (bStatus != kStatus_BUTTON_Success)
-    {
-        err = CHIP_ERROR_UNEXPECTED_EVENT;
-        ChipLogError(DeviceLayer, "button init error");       
-    }
-
-    // Create FreeRTOS sw timer for Function Selection.
-    sFunctionTimer = xTimerCreate("FnTmr",          // Just a text name, not used by the RTOS kernel
-                                  1,                // == default timer period (mS)
-                                  false,            // no timer reload (==one-shot)
-                                  (void *) this,    // init timer id = app task obj context
-                                  TimerEventHandler // timer callback handler
-    );
-    if (sFunctionTimer == NULL)
-    {
-        err = CHIP_ERROR_UNEXPECTED_EVENT;
-        ChipLogError(DeviceLayer, "app_timer_create() failed");
-        assert(err == CHIP_NO_ERROR);
-    }
-
     err = ClusterMgr().Init();
     if (err != CHIP_NO_ERROR)
     {
@@ -288,7 +236,12 @@ CHIP_ERROR AppTask::Init()
     PlatformMgr().ScheduleWork(gOTARequestorInitiator.InitOTA, reinterpret_cast<intptr_t>(&gOTARequestorInitiator));
 #endif
 
-    addMatterCliCommands();
+    /* Register Matter CLI cmds */
+    err = AppMatterCli_RegisterCommands();
+    assert(err == CHIP_NO_ERROR);
+    /* Register Matter buttons */
+    err = AppMatterButton_registerButtons();
+    assert(err == CHIP_NO_ERROR);
 
     return err;
 }
@@ -317,161 +270,6 @@ void AppTask::AppTaskMain(void * pvParameter)
     }
 }
 
-button_status_t AppTask::SdkButtonCallback(void *buttonHandle, button_callback_message_t *message, void *callbackParam)
-{
-    switch (message->event)
-    {
-        case kBUTTON_EventShortPress:
-            static_cast<AppTask *>(callbackParam)->ButtonEventHandler(TCPIP_BUTTON, TCPIP_BUTTON_PUSH);
-            break;
-        case kBUTTON_EventLongPress:
-            static_cast<AppTask *>(callbackParam)->ButtonEventHandler(TCPIP_BUTTON, RESET_BUTTON_PUSH);
-            break;
-        default:
-            break;
-    }
-    return kStatus_BUTTON_Success;
-}
-
-void AppTask::ButtonEventHandler(uint8_t pin_no, uint8_t button_action)
-{
-    if (pin_no != TCPIP_BUTTON)
-    {
-        return;
-    }
-
-    AppEvent button_event;
-    button_event.Type               = AppEvent::kEventType_Button;
-    button_event.ButtonEvent.PinNo  = pin_no;
-    button_event.ButtonEvent.Action = button_action;
-
-    if (pin_no == TCPIP_BUTTON)
-    {
-        button_event.Handler = BleHandler;
-        if (button_action == RESET_BUTTON_PUSH)
-        {
-            button_event.Handler = ResetActionEventHandler;
-        }
-    }
-
-    sAppTask.PostEvent(&button_event);
-}
-
-
-void AppTask::TimerEventHandler(TimerHandle_t xTimer)
-{
-    AppEvent event;
-    event.Type               = AppEvent::kEventType_Timer;
-    event.TimerEvent.Context = (void *) xTimer;
-    event.Handler            = FunctionTimerEventHandler;
-    sAppTask.PostEvent(&event);
-}
-
-void AppTask::FunctionTimerEventHandler(AppEvent * aEvent)
-{
-    if (aEvent->Type != AppEvent::kEventType_Timer)
-        return;
-
-    ChipLogProgress(DeviceLayer, "Device will factory reset...");
-
-    // Actually trigger Factory Reset
-    ConfigurationMgr().InitiateFactoryReset();
-}
-
-void AppTask::ResetActionEventHandler(AppEvent * aEvent)
-{
-    if (aEvent->ButtonEvent.PinNo != RESET_BUTTON && aEvent->ButtonEvent.PinNo != TCPIP_BUTTON)
-        return;
-
-    if (sAppTask.mFunction != kFunction_NoneSelected && sAppTask.mFunction != kFunction_FactoryReset)
-    {
-        ChipLogProgress(DeviceLayer, "Another function is scheduled. Could not toggle Factory Reset state!");
-        return;
-    }
-
-    if (sAppTask.mResetTimerActive)
-    {
-        sAppTask.CancelTimer();
-        sAppTask.mFunction = kFunction_NoneSelected;
-
-        ChipLogProgress(DeviceLayer, "Factory Reset was cancelled!");
-    }
-    else
-    {
-        uint32_t resetTimeout = FACTORY_RESET_TRIGGER_TIMEOUT;
-
-        if (sAppTask.mFunction != kFunction_NoneSelected)
-        {
-            ChipLogProgress(DeviceLayer, "Another function is scheduled. Could not initiate Factory Reset!");
-            return;
-        }
-
-        ChipLogProgress(DeviceLayer, "Factory Reset Triggered. Push the RESET button within %lu ms to cancel!", resetTimeout);
-        sAppTask.mFunction = kFunction_FactoryReset;
-        sAppTask.StartTimer(FACTORY_RESET_TRIGGER_TIMEOUT);
-    }
-}
-
-void AppTask::BleHandler(AppEvent * aEvent)
-{
-    if (aEvent->ButtonEvent.PinNo != TCPIP_BUTTON)
-        return;
-
-    if (sAppTask.mFunction != kFunction_NoneSelected)
-    {
-        ChipLogProgress(DeviceLayer, "Another function is scheduled. Could not toggle BLE state!");
-        return;
-    }
-
-    if (ConnectivityMgr().IsBLEAdvertisingEnabled())
-    {
-        ConnectivityMgr().SetBLEAdvertisingEnabled(false);
-        ChipLogProgress(DeviceLayer, "Stopped BLE Advertising!");
-    }
-    else
-    {
-        ConnectivityMgr().SetBLEAdvertisingEnabled(true);
-
-        if (chip::Server::GetInstance().GetCommissioningWindowManager().OpenBasicCommissioningWindow() == CHIP_NO_ERROR)
-        {
-            ChipLogProgress(DeviceLayer, "Started BLE Advertising!");
-        }
-        else
-        {
-            ChipLogProgress(DeviceLayer, "OpenBasicCommissioningWindow() failed");
-        }
-    }
-}
-
-void AppTask::CancelTimer()
-{
-    if (xTimerStop(sFunctionTimer, 0) == pdFAIL)
-    {
-        ChipLogError(DeviceLayer, "app timer stop() failed");
-    }
-
-    mResetTimerActive = false;
-}
-
-void AppTask::StartTimer(uint32_t aTimeoutInMs)
-{
-    if (xTimerIsTimerActive(sFunctionTimer))
-    {
-        ChipLogError(DeviceLayer, "app timer already started!");
-        CancelTimer();
-    }
-
-    // timer is not active, change its period to required value (== restart).
-    // FreeRTOS- Block for a maximum of 100 ticks if the change period command
-    // cannot immediately be sent to the timer command queue.
-    if (xTimerChangePeriod(sFunctionTimer, aTimeoutInMs / portTICK_PERIOD_MS, 100) != pdPASS)
-    {
-        ChipLogError(DeviceLayer, "app timer start() failed");
-    }
-
-    mResetTimerActive = true;
-}
-
 void AppTask::ActionInitiated(ClusterManager::Action_t aAction, int32_t aActor)
 {
     // start flashing the LEDs rapidly to indicate action initiation.
@@ -489,7 +287,6 @@ void AppTask::ActionInitiated(ClusterManager::Action_t aAction, int32_t aActor)
 
 void AppTask::ActionCompleted(ClusterManager::Action_t aAction)
 {
-   
     if (aAction == ClusterManager::TURNON_ACTION)
     {
         ChipLogProgress(DeviceLayer, "Turn on action has been completed");
@@ -506,7 +303,7 @@ void AppTask::PostEvent(const AppEvent * aEvent)
 {
     if (sAppEventQueue != NULL)
     {
-        if (!xQueueSend(sAppEventQueue, aEvent, 1))
+        if (!xQueueSend(sAppEventQueue, aEvent, 0))
         {
             ChipLogError(DeviceLayer, "Failed to post event to app task event queue");
         }
@@ -534,6 +331,87 @@ void AppTask::UpdateClusterState(void)
                                                  (uint8_t *) &newValue, ZCL_BOOLEAN_ATTRIBUTE_TYPE);
     if (status != EMBER_ZCL_STATUS_SUCCESS)
     {
-        ChipLogError(NotSpecified, "ERR: updating on/off %x", status);
+        ChipLogError(DeviceLayer, "ERR: updating on/off %x", status);
     }
+}
+
+void AppTask::StartCommissioning(intptr_t arg)
+{
+    /* Check the status of the commissioning */
+    if (ConfigurationMgr().IsFullyProvisioned())
+    {
+        ChipLogProgress(DeviceLayer, "Device already commissioned");
+    }
+    else if (chip::Server::GetInstance().GetCommissioningWindowManager().IsCommissioningWindowOpen())
+    {
+         ChipLogProgress(DeviceLayer, "Commissioning window already opened");
+    }
+    else
+    {
+        chip::Server::GetInstance().GetCommissioningWindowManager().OpenBasicCommissioningWindow();
+    }
+}
+
+void AppTask::StopCommissioning(intptr_t arg)
+{
+    /* Check the status of the commissioning */
+    if (ConfigurationMgr().IsFullyProvisioned())
+    {
+        ChipLogProgress(DeviceLayer, "Device already commissioned");
+    }
+    else if (!chip::Server::GetInstance().GetCommissioningWindowManager().IsCommissioningWindowOpen())
+    {
+         ChipLogProgress(DeviceLayer, "Commissioning window not opened");
+    }
+    else
+    {
+        chip::Server::GetInstance().GetCommissioningWindowManager().CloseCommissioningWindow();
+    }
+}
+
+void AppTask::SwitchCommissioningState(intptr_t arg)
+{
+     /* Check the status of the commissioning */
+    if (ConfigurationMgr().IsFullyProvisioned())
+    {
+        ChipLogProgress(DeviceLayer, "Device already commissioned");
+    }
+    else if (!chip::Server::GetInstance().GetCommissioningWindowManager().IsCommissioningWindowOpen())
+    {
+        chip::Server::GetInstance().GetCommissioningWindowManager().OpenBasicCommissioningWindow();
+    }
+    else
+    {
+        chip::Server::GetInstance().GetCommissioningWindowManager().CloseCommissioningWindow();
+    }
+}
+
+void AppTask::FactoryReset(intptr_t arg)
+{
+    // Actually trigger Factory Reset
+    ConfigurationMgr().InitiateFactoryReset();
+}
+
+void AppTask::StartCommissioningHandler(void)
+{
+    /* Publish an event to the Matter task to always set the commissioning state in the Matter task context */
+    PlatformMgr().ScheduleWork(StartCommissioning, 0);
+}
+
+void AppTask::StopCommissioningHandler(void)
+{
+    /* Publish an event to the Matter task to always set the commissioning state in the Matter task context */
+    PlatformMgr().ScheduleWork(StopCommissioning, 0);
+}
+
+void AppTask::SwitchCommissioningStateHandler(void)
+{
+    /* Publish an event to the Matter task to always set the commissioning state in the Matter task context */
+    PlatformMgr().ScheduleWork(SwitchCommissioningState, 0);
+}
+
+void AppTask::FactoryResetHandler(void)
+{
+    /* Publish an event to the Matter task to trigger the factory reset in the Matter task context */
+    PlatformMgr().ScheduleWork(FactoryReset, 0);
 }

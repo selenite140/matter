@@ -20,6 +20,14 @@ import("${k32w0_sdk_build_root}/k32w0_sdk.gni")
 
 assert(chip_device_platform == "k32w0")
 
+declare_args() {
+  chip_software_version = 42020
+}
+
+defines = [
+  "CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION=${chip_software_version}",
+]
+
 if (chip_enable_openthread) {
   import("//build_overrides/openthread.gni")
 }
@@ -45,8 +53,6 @@ static_library("k32w0") {
     "DiagnosticDataProviderImpl.h",
     "K32W0Config.cpp",
     "K32W0Config.h",
-    "K32W0FactoryDataProvider.cpp",
-    "K32W0FactoryDataProvider.h",
     "KeyValueStoreManagerImpl.cpp",
     "KeyValueStoreManagerImpl.h",
     "Logging.cpp",
@@ -64,6 +70,13 @@ static_library("k32w0") {
     "${chip_root}/src/credentials/examples/ExampleDACs.h",
     "${chip_root}/src/credentials/examples/ExamplePAI.h",
   ]
+
+  if (chip_with_factory_data == 1) {
+    sources += [
+      "K32W0FactoryDataProvider.cpp",
+      "K32W0FactoryDataProvider.h",
+    ]
+  }
 
   if (chip_with_low_power != 0) {
     sources += [ "LowPowerHooks.cpp" ]

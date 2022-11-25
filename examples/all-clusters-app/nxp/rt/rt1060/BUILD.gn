@@ -55,12 +55,13 @@ rt_executable("all_cluster_app") {
     "${chip_root}/examples/all-clusters-app/all-clusters-common/src/bridged-actions-stub.cpp",
     "${chip_root}/examples/all-clusters-app/all-clusters-common/src/binding-handler.cpp",
     "${chip_root}/examples/all-clusters-app/all-clusters-common/src/static-supported-modes-manager.cpp",
+    "src/AppMatterButton.cpp",
     "../../common/main/AppTask.cpp",
     "../../common/main/CHIPDeviceManager.cpp",
     "../../common/main/ClusterManager.cpp",
     "../../common/main/DeviceCallbacks.cpp",
     "../../common/main/ZclCallbacks.cpp",
-    "../../common/main/MatterCli.cpp",
+    "../../common/main/AppMatterCli.cpp",
     "../../common/main/include/CHIPDeviceManager.h",
     "../../common/main/include/ClusterManager.h",
     "../../common/main/include/DeviceCallbacks.h",
@@ -168,6 +169,11 @@ rt_executable("all_cluster_app") {
     ]
   }
 
+  # In case a dedicated assert function needs to be supported the flag sdk_fsl_assert_support should be set to false
+  # The would add to the build a dedicated application assert implementation.
+  if (!sdk_fsl_assert_support) {
+    sources += [ "../../common/main/AppAssert.cpp" ]
+  }
 
   cflags = [ "-Wconversion" ]
 

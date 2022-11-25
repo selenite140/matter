@@ -73,16 +73,8 @@ template("bt_ble_target") {
         "${rt_sdk_root}/middleware/wireless/ethermind/port/pal/mcux/bluetooth/controller",
         # SDK hook requires to build the BLEManagerImpl.cpp from Zephyr
         "${nxp_sdk_build_root}/${nxp_sdk_name}/sdk_hook",
-
     ]
     libs = []
-    libs += [
-      #ethermind bt libs
-      "${rt_sdk_root}/middleware/wireless/ethermind/bluetooth/private/lib/mcux/default/btdm/cm7f/gcc/libethermind_bt_core.a",
-      "${rt_sdk_root}/middleware/wireless/ethermind/bluetooth/private/lib/mcux/default/btdm/cm7f/gcc/libethermind_bt_gatt.a",
-      "${rt_sdk_root}/middleware/wireless/ethermind/bluetooth/private/lib/mcux/default/btdm/cm7f/gcc/libethermind_bt_protocol.a",
-      "${rt_sdk_root}/middleware/wireless/ethermind/bluetooth/private/lib/mcux/default/btdm/cm7f/gcc/libethermind_bt_util.a",
-    ]
 
     if (hci_spinel_single_uart) {
       # Allows to wrap hci_uart functions to another implementation.
@@ -157,9 +149,6 @@ template("bt_ble_target") {
       "${rt_sdk_root}/middleware/edgefast_bluetooth/source/porting/slist.c",
       "${rt_sdk_root}/middleware/edgefast_bluetooth/source/porting/work_queue.c",
   #ethermind files
-      "${rt_sdk_root}/middleware/wireless/ethermind/port/pal/mcux/bluetooth/hci_uart.c",
-      "${rt_sdk_root}/middleware/wireless/ethermind/port/pal/mcux/bluetooth/controller/controller_wifi_nxp.c",
-      "${rt_sdk_root}/middleware/wireless/ethermind/port/pal/mcux/bluetooth/controller.c",
       "${rt_sdk_root}/middleware/wireless/ethermind/port/pal/mcux/bluetooth/sco_audio_pl.c",
       "${rt_sdk_root}/middleware/wireless/ethermind/port/pal/mcux/bluetooth/write_task_pl.c",
       "${rt_sdk_root}/middleware/wireless/ethermind/port/pal/mcux/bluetooth/ht_read_task_pl.c",
@@ -186,7 +175,6 @@ template("bt_ble_target") {
       "${nxp_sdk_build_root}/${nxp_sdk_name}/sdk_hook/random/rand32.cpp",
     ]
 
-    
     if (!defined(configs)) {
       configs = []
     }

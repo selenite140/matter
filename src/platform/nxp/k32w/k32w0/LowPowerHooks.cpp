@@ -54,8 +54,8 @@ extern "C" void stopM2();
 extern "C" void sched_enable();
 extern "C" uint64_t otPlatTimeGet(void);
 
-static void dm_switch_wakeupCallBack(void);
-static void dm_switch_preSleepCallBack(void);
+WEAK void dm_switch_wakeupCallBack(void);
+WEAK void dm_switch_preSleepCallBack(void);
 static void ThreadExitSleep();
 static void BOARD_SetClockForWakeup(void);
 
@@ -126,7 +126,7 @@ extern "C" bleResult_t App_PostCallbackMessage(appCallbackHandler_t handler, app
     return gBleSuccess_c;
 }
 
-static void dm_switch_wakeupCallBack(void)
+WEAK void dm_switch_wakeupCallBack(void)
 {
     BOARD_SetClockForWakeup();
     SHA_ClkInit(SHA_INSTANCE);
@@ -169,7 +169,11 @@ void vOptimizeConsumption(uint32_t u32PIOvalue, uint32_t u32SkipIO)
 {
     uint8_t u8KeepFro32k, u8KeepIOclk, u8KeepXtal32M;
 
-    u8KeepFro32k                       = u32SkipIO >> 31;
+#if !gClkUseFro32K
+    u8KeepFro32k = u32SkipIO >> 31;
+#else
+    u8KeepFro32k = 1;
+#endif
     u8KeepIOclk                        = (u32SkipIO >> 30) & 0x1;
     u8KeepXtal32M                      = (u32SkipIO >> 29) & 0x1;
     const gpio_pin_config_t pin_config = { .pinDirection = kGPIO_DigitalInput, .outputLogic = 1U };
@@ -207,7 +211,7 @@ void vOptimizeConsumption(uint32_t u32PIOvalue, uint32_t u32SkipIO)
     }
 }
 
-static void dm_switch_preSleepCallBack(void)
+WEAK void dm_switch_preSleepCallBack(void)
 {
 #if ENABLE_LOW_POWER_LOGS
     K32W_LOG("dm_switch_preSleepCallBack");
@@ -296,12 +300,12 @@ extern "C" void App_NotifyWakeup(void)
 
 extern "C" void App_AllowDeviceToSleep()
 {
-    PWR_PreventEnterLowPower(false);
+    PWR_AllowDeviceToSleep();
 }
 
 extern "C" void App_DisallowDeviceToSleep()
 {
-    PWR_PreventEnterLowPower(true);
+    PWR_DisallowDeviceToSleep();
 }
 
 static void BOARD_SetClockForWakeup(void)

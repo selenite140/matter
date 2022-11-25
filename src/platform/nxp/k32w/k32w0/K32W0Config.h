@@ -92,7 +92,6 @@ public:
     static constexpr Key kConfigKey_CountryCode        = K32WConfigKey(kPDMId_ChipConfig, 0x08);
     static constexpr Key kConfigKey_UniqueId           = K32WConfigKey(kPDMId_ChipConfig, 0x0A);
     static constexpr Key kConfigKey_SoftwareVersion    = K32WConfigKey(kPDMId_ChipConfig, 0x0B);
-    static constexpr Key kConfigKey_FirstRunOfOTAImage = K32WConfigKey(kPDMId_ChipConfig, 0x0C);
 
     // CHIP Counter Keys
     static constexpr Key kCounterKey_RebootCount           = K32WConfigKey(kPDMId_ChipCounter, 0x00);
@@ -187,16 +186,13 @@ CHIP_ERROR K32WConfig::WriteConfigValue(Key key, TValue val)
 {
     CHIP_ERROR err;
     PDM_teStatus status;
-    RamStorage::Buffer buffer;
 
     MutexLock(pdmMutexHandle, osaWaitForever_c);
     VerifyOrExit(ValidConfigKey(key), err = CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND);
     err = RamStorage::Write(key, (uint8_t *) &val, sizeof(TValue));
     SuccessOrExit(err);
 
-    buffer = RamStorage::GetBuffer();
-    status = FS_eSaveRecordDataInIdleTask(kNvmIdChipConfigData, buffer,
-                                          buffer->ramBufferLen + kRamDescHeaderSize);
+    status = PDM_SaveRecord(kNvmIdChipConfigData, RamStorage::GetBuffer());
     SuccessOrExit(err = MapPdmStatusToChipError(status));
 
 exit:
@@ -219,7 +215,8 @@ CHIP_ERROR K32WConfig::WriteConfigValueSync(Key key, TValue val)
     // writing, thus avoiding race conditions.
     OSA_InterruptDisable();
     buffer = RamStorage::GetBuffer();
-    status = PDM_eSaveRecordData(kNvmIdChipConfigData, buffer, buffer->ramBufferLen + kRamDescHeaderSize);
+    status = PDM_eSaveRecordData(kNvmIdChipConfigData, buffer->buffer,
+                                 buffer->header.length);
     OSA_InterruptEnable();
     SuccessOrExit(err = MapPdmStatusToChipError(status));
 
