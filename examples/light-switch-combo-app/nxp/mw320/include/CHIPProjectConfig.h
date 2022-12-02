@@ -131,6 +131,43 @@
 #endif // CONFIG_CHIP_MW320_REAL_FACTORY_DATA
 
 /**
+ * CHIP_DEVICE_CONFIG_DEVICE_HARDWARE_VERSION
+ *
+ * The hardware version number assigned to device or product by the device vendor.  This
+ * number is scoped to the device product id, and typically corresponds to a revision of the
+ * physical device, a change to its packaging, and/or a change to its marketing presentation.
+ * This value is generally *not* incremented for device software versions.
+ */
+#define CHIP_DEVICE_CONFIG_DEVICE_HARDWARE_VERSION 100
+
+#ifndef CHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING
+#define CHIP_DEVICE_CONFIG_DEFAULT_DEVICE_HARDWARE_VERSION_STRING "v1.0.0.0"
+#endif
+
+/**
+ * CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING
+ *
+ * A string identifying the software version running on the device.
+ * CHIP currently expects the software version to be in the format
+ * {MAJOR_VERSION}.0d{MINOR_VERSION}
+ */
+#ifndef CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING
+#define CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING "2.9.10-007"
+#endif
+
+#ifndef CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION
+#define CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION 1
+#endif
+
+#ifndef CHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME
+#define CHIP_DEVICE_CONFIG_DEVICE_VENDOR_NAME "NXP Semiconductors"
+#endif
+
+#ifndef CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME
+#define CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_NAME "NXP Demo App"
+#endif
+
+/**
  * CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_REVISION
  *
  * The product revision number assigned to device or product by the device vendor.  This
@@ -209,4 +246,3 @@
 #define CHIP_CONFIG_EVENT_LOGGING_DEFAULT_IMPORTANCE chip::Profiles::DataManagement::Debug
 #endif // BUILD_RELEASE
 
-#define CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION 1

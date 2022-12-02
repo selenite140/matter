@@ -64,6 +64,7 @@
 #include "binding-handler.h"
 
 #include "AppTask.h"
+#include "CHIPProjectConfig.h"
 
 /* platform specific */
 #include "board.h"
@@ -97,7 +98,6 @@ extern "C" {
 #define SSID_FNAME "ssid_fname"
 #define PSK_FNAME "psk_fname"
 
-#define VERSION_STR	"mw320-2.9.10-007"
 #define RUN_RST_LT_DELAY 10
 
 /*******************************************************************************
@@ -176,7 +176,7 @@ void InitOTARequestor(void)
 
 const char * mw320_get_verstr(void)
 {
-    return VERSION_STR;
+    return CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING;
 }
 
 void save_network(char * ssid, char * pwd);
@@ -1070,7 +1070,7 @@ void ShellCLIMain(void * pvParameter)
         return;
     }
 
-    PRINTF("version: [%s] \r\n", VERSION_STR);
+    PRINTF("version: [%s] \r\n", mw320_get_verstr());
 
     // Initialize the SDK components
     init_mw320_sdk();

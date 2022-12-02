@@ -25,7 +25,6 @@
 #include <lib/support/CHIPArgParser.hpp>
 #include <lib/support/CodeUtils.h>
 
-//#include <lib/support/RandUtils.h>   //==> rm from TE7.5
 #include <app-common/zap-generated/attribute-id.h>
 #include <app-common/zap-generated/cluster-id.h>
 #include <app/server/Dnssd.h>
@@ -42,14 +41,12 @@
 
 #include <ChipShellCollection.h>
 
-// cr++
 #if (defined(CONFIG_CHIP_MW320_REAL_FACTORY_DATA) && (CONFIG_CHIP_MW320_REAL_FACTORY_DATA == 1))
 #include "FactoryDataProvider.h"
 #else
 #include <credentials/DeviceAttestationCredsProvider.h>
 #include <credentials/examples/DeviceAttestationCredsExample.h>
 #endif // if CONFIG_CHIP_MW320_REAL_FACTORY_DATA
-// cr--
 // ota++
 #include "app/clusters/ota-requestor/BDXDownloader.h"
 #include "app/clusters/ota-requestor/DefaultOTARequestor.h"
@@ -67,6 +64,7 @@
 #include "binding-handler.h"
 
 #include "AppTask.h"
+#include "CHIPProjectConfig.h"
 
 /* platform specific */
 #include "board.h"
@@ -100,14 +98,6 @@ extern "C" {
 #define SSID_FNAME "ssid_fname"
 #define PSK_FNAME "psk_fname"
 
-#define VERSION_STR	"mw320-2.9.10-007"
-enum
-{
-    MCUXPRESSO_WIFI_CLI,
-    MATTER_SHELL,
-    MAX_SELECTION,
-};
-static int Matter_Selection = MAX_SELECTION;
 #define RUN_RST_LT_DELAY 10
 
 /*******************************************************************************
@@ -186,7 +176,7 @@ void InitOTARequestor(void)
 
 const char * mw320_get_verstr(void)
 {
-    return VERSION_STR;
+    return CHIP_DEVICE_CONFIG_DEVICE_SOFTWARE_VERSION_STRING;
 }
 
 void save_network(char * ssid, char * pwd);
@@ -874,158 +864,6 @@ std::string createSetupPayload()
 }
 #endif // 0
 
-#if 0
-void demo_init(void)
-{
-	struct wlan_network network;
-    int ret = 0;
-
-	// add uAP profile
-    memset(&network, 0, sizeof(struct wlan_network));
-    memcpy(network.name, profile, strlen(profile));
-
-	memcpy(network.ssid, ssid, strlen(ssid));
-	network.channel = 1;
-
-	network.ip.ipv4.address = net_inet_aton(network_ip);
-    network.ip.ipv4.gw      = net_inet_aton(network_ip);
-    network.ip.ipv4.netmask = net_inet_aton(network_netmask);
-	network.ip.ipv4.addr_type = ADDR_TYPE_STATIC;
-
-	network.security.psk_len = strlen(psk);
-    strcpy(network.security.psk, psk);
-	network.security.type = WLAN_SECURITY_WPA2;
-
-	network.role = WLAN_BSS_ROLE_UAP;
-
-    ret = wlan_add_network(&network);
-    switch (ret)
-    {
-        case WM_SUCCESS:
-            PRINTF("Added \"%s\"\r\n", network.name);
-            break;
-        case -WM_E_INVAL:
-            PRINTF("Error: network already exists or invalid arguments\r\n");
-            break;
-        case -WM_E_NOMEM:
-            PRINTF("Error: network list is full\r\n");
-            break;
-        case WLAN_ERROR_STATE:
-            PRINTF("Error: can't add networks in this state\r\n");
-            break;
-        default:
-            PRINTF(
-                "Error: unable to add network for unknown"
-                " reason\r\n");
-            break;
-    }
-
-	// start uAP
-    ret = wlan_start_network(profile);
-    if (ret != WM_SUCCESS)
-        PRINTF("Error: unable to start network\r\n");
-	else
-		PRINTF("start uAP ssid: %s\r\n", network.ssid);
-
-}
-#endif // 0
-
-void task_main(void * param)
-{
-#if 0
-    int32_t result = 0;
-    flash_desc_t fl;
-    struct partition_entry *p, *f1, *f2;
-    short history = 0;
-    uint32_t *wififw;
-#ifdef CONFIG_USE_PSM
-    struct partition_entry *psm;
-#endif
-
-    mcuInitPower();
-
-    boot_init();
-
-    mflash_drv_init();
-
-    PRINTF("[%s]: Initialize CLI\r\n", __FUNCTION__);
-    result = cli_init();
-    if (WM_SUCCESS != result)
-    {
-        assert(false);
-    }
-
-    PRINTF("[%s]: Initialize WLAN Driver\r\n", __FUNCTION__);
-    result = part_init();
-    if (WM_SUCCESS != result)
-    {
-        assert(false);
-    }
-
-#ifdef CONFIG_USE_PSM
-    psm = part_get_layout_by_id(FC_COMP_PSM, NULL);
-    part_to_flash_desc(psm, &fl);
-#else
-    fl.fl_dev   = 0U;
-    fl.fl_start = MFLASH_FILE_BASEADDR;
-    fl.fl_size  = MFLASH_FILE_SIZE;
-#endif
-    init_flash_storage((char *)CONNECTION_INFO_FILENAME, &fl);
-
-    f1 = part_get_layout_by_id(FC_COMP_WLAN_FW, &history);
-    f2 = part_get_layout_by_id(FC_COMP_WLAN_FW, &history);
-
-    if (f1 && f2)
-    {
-        p = part_get_active_partition(f1, f2);
-    }
-    else if (!f1 && f2)
-    {
-        p = f2;
-    }
-    else if (!f2 && f1)
-    {
-        p = f1;
-    }
-    else
-    {
-        PRINTF("[%s]: Wi-Fi Firmware not detected\r\n", __FUNCTION__);
-        p = NULL;
-    }
-
-    if (p != NULL)
-    {
-        part_to_flash_desc(p, &fl);
-        wififw = (uint32_t *)mflash_drv_phys2log(fl.fl_start, fl.fl_size);
-        assert(wififw != NULL);
-        /* First word in WIFI firmware is magic number. */
-        assert(*wififw == (('W' << 0) | ('L' << 8) | ('F' << 16) | ('W' << 24)));
-
-        /* Initialize WIFI Driver */
-        /* Second word in WIFI firmware is WIFI firmware length in bytes. */
-        /* Real WIFI binary starts from 3rd word. */
-        result = wlan_init((const uint8_t *)(wififw + 2U), *(wififw + 1U));
-        if (WM_SUCCESS != result)
-        {
-            assert(false);
-        }
-        PRINTF("[%s]: wlan_init success \r\n", __FUNCTION__);
-
-        result = wlan_start(wlan_event_callback);
-        if (WM_SUCCESS != result)
-        {
-            assert(false);
-        }
-    }
-
-    while (1)
-    {
-        /* wait for interface up */
-        os_thread_sleep(os_msec_to_ticks(5000));
-		PRINTF("[%s]: looping\r\n", __FUNCTION__);
-    }
-#endif // 0
-}
 
 static void run_chip_srv(System::Layer * aSystemLayer, void * aAppState)
 {
@@ -1142,6 +980,8 @@ void task_test_main(void * param)
             PRINTF("--> update [ZCL_ON_OFF_CLUSTER_ID]: ZCL_ON_OFF_ATTRIBUTE_ID [%d] \r\n", value);
             emAfWriteAttribute(1, ZCL_ON_OFF_CLUSTER_ID, ZCL_ON_OFF_ATTRIBUTE_ID, (uint8_t *) &value, sizeof(value), true, false);
 #endif // SUPPORT_MANUAL_CTRL
+            // Trigger to send on/off/toggle command to the bound devices
+            chip::BindingManager::GetInstance().NotifyBoundClusterChanged(1, chip::app::Clusters::OnOff::Id, nullptr);
 
             need2sync_sw_attr = false;
         }
@@ -1230,7 +1070,7 @@ void ShellCLIMain(void * pvParameter)
         return;
     }
 
-    PRINTF("version: [%s] \r\n", VERSION_STR);
+    PRINTF("version: [%s] \r\n", mw320_get_verstr());
 
     // Initialize the SDK components
     init_mw320_sdk();
@@ -1280,30 +1120,15 @@ int StartShellTask(void)
     int ret = 0;
 
     // Start Shell task.
-    switch (Matter_Selection)
+    if (xTaskCreate(ShellCLIMain, "SHELL", TASK_MAIN_STACK_SIZE, NULL, TASK_MAIN_PRIO, &sShellTaskHandle) != pdPASS)
     {
-    case MCUXPRESSO_WIFI_CLI:
-#ifdef MCUXPRESSO_WIFI_CLI
-        if (xTaskCreate(task_main, "main", TASK_MAIN_STACK_SIZE, task_main_stack, TASK_MAIN_PRIO, &task_main_task_handler) !=
-            pdPASS)
-        {
-            ret = -1;
-        }
-        break;
-#endif
-    case MATTER_SHELL:
-    default:
-        if (xTaskCreate(ShellCLIMain, "SHELL", TASK_MAIN_STACK_SIZE, NULL, TASK_MAIN_PRIO, &sShellTaskHandle) != pdPASS)
-        {
-            ret = -1;
-        }
-        if (xTaskCreate(task_test_main, "testmain", TASK_MAIN_STACK_SIZE, task_main_stack, TASK_MAIN_PRIO,
-                        &task_main_task_handler) != pdPASS)
-        {
-            PRINTF("Failed to crete task_test_main() \r\n");
-            ret = -1;
-        }
-        break;
+        ret = -1;
+    }
+    if (xTaskCreate(task_test_main, "testmain", TASK_MAIN_STACK_SIZE, task_main_stack, TASK_MAIN_PRIO,
+                    &task_main_task_handler) != pdPASS)
+    {
+        PRINTF("Failed to crete task_test_main() \r\n");
+        ret = -1;
     }
 
     return ret;
@@ -1357,22 +1182,6 @@ int main(void)
     BOARD_BootClockRUN();
 
     BOARD_InitDebugConsole();
-#ifdef MCUXPRESSO_WIFI_CLI
-    PRINTF("\nPlease Select [1/2] => 1. MCUXpress format 2. Matter format. \r\n");
-    do
-    {
-        ch = GETCHAR();
-        PUTCHAR(ch);
-        if (ch == '1')
-            Matter_Selection = MCUXPRESSO_WIFI_CLI;
-        else if (ch == '2')
-            Matter_Selection = MATTER_SHELL;
-    } while (ch != '\r');
-    if (Matter_Selection == MAX_SELECTION)
-        Matter_Selection = MATTER_SHELL;
-    PRINTF("\n\n[%s]:  MW320 %s .\r\n", __FUNCTION__,
-           (Matter_Selection == MCUXPRESSO_WIFI_CLI) ? "MCUXPresso WiFi CLI" : "Matter Shell");
-#else
 #ifdef CONFIGURE_UAP
     PRINTF("\nDo you want to use the default SSID and key for mw320 uAP? [y/n]\r\n");
     do
@@ -1422,7 +1231,6 @@ int main(void)
         }
     } while (ch != 'y');
 #endif
-#endif
     //    PRINTF("\nMW320 uAP SSID=%s key=%s ip=%s \r\n", ssid, psk, network_ip);
 
     CLOCK_EnableXtal32K(kCLOCK_Osc32k_External);
@@ -1442,10 +1250,3 @@ int main(void)
 
     return 0;
 }
-
-/*
-bool lowPowerClusterSleep()
-{
-    return true;
-}
-*/
