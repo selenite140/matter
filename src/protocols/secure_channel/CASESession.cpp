@@ -732,13 +732,13 @@ CHIP_ERROR CASESession::SendSigma2()
 
     // Generate a Shared Secret
 #if defined(ENABLE_HSM_HKDF) && defined(ENABLE_HSM_EC_KEY)
-    ((Crypto::P256KeypairHSM*)mEphemeralKey)->SetSharedSecretKeyId(kKeyId_ecdh_sh_sec_inobj_keyid);
+    ((Crypto::P256KeypairHSM *) mEphemeralKey)->SetSharedSecretKeyId(kKeyId_ecdh_sh_sec_inobj_keyid);
 #endif
 
     ReturnErrorOnFailure(mEphemeralKey->ECDH_derive_secret(mRemotePubKey, mSharedSecret));
 
 #if defined(ENABLE_HSM_HKDF) && defined(ENABLE_HSM_EC_KEY)
-    ((Crypto::P256KeypairHSM*)mEphemeralKey)->SetSharedSecretKeyId(kKeyId_NotInitialized);
+    ((Crypto::P256KeypairHSM *) mEphemeralKey)->SetSharedSecretKeyId(kKeyId_NotInitialized);
 #endif
 
     uint8_t msg_salt[kIPKSize + kSigmaParamRandomNumberSize + kP256_PublicKey_Length + kSHA256_Hash_Length];
@@ -753,7 +753,7 @@ CHIP_ERROR CASESession::SendSigma2()
     uint8_t sr2k[CHIP_CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES];
     ReturnErrorOnFailure(mHKDF.HKDF_SHA256(mSharedSecret, mSharedSecret.Length(), saltSpan.data(), saltSpan.size(), kKDFSR2Info,
                                            kKDFInfoLength, sr2k, CHIP_CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES));
-    
+
     // Construct Sigma2 TBS Data
     size_t msg_r2_signed_len =
         TLV::EstimateStructOverhead(kMaxCHIPCertLength, kMaxCHIPCertLength, kP256_PublicKey_Length, kP256_PublicKey_Length);

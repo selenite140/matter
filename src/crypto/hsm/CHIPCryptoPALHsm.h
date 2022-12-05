@@ -118,9 +118,9 @@ class P256KeypairHSM : public P256Keypair
 public:
     P256KeypairHSM()
     {
-        provisioned_key = false;
-        is_persistent = false;
-        keyid           = 0;
+        provisioned_key     = false;
+        is_persistent       = false;
+        keyid               = 0;
         shared_secret_keyid = 0;
     }
 

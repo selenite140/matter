@@ -88,7 +88,8 @@ CHIP_ERROR HKDF_shaHSM::HKDF_SHA256(const uint8_t * secret, const size_t secret_
 
     error = CHIP_NO_ERROR;
 exit:
-    if (keyid == kKeyId_hkdf_sha256_hmac_keyid) {
+    if (keyid == kKeyId_hkdf_sha256_hmac_keyid)
+    {
         sss_key_store_erase_key(&gex_sss_chip_ctx.ks, &keyObject);
     }
 

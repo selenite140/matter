@@ -114,7 +114,8 @@ CHIP_ERROR CryptoContext::InitFromSecret(const ByteSpan & secret, const ByteSpan
 #else
 
 #if defined(ENABLE_HSM_SPAKE) && defined(ENABLE_HSM_HKDF) && (SE05X_SECURE_OBJECT_FOR_SPAKE2P_SESSION_KEYS == 1)
-    if (secret.size() == 16){ // REMOVE THIS CHECK. FIND OTHER WAY TO INDENITY WHEN TO USE SECRET FROM OBJECT
+    if (secret.size() == 16)
+    { // REMOVE THIS CHECK. FIND OTHER WAY TO INDENITY WHEN TO USE SECRET FROM OBJECT
 #if ENABLE_HSM_SPAKE_VERIFIER
         mHKDF.setKeyId(kKeyId_spake2p_v_tgt_sec_obj);
 #else
@@ -124,7 +125,8 @@ CHIP_ERROR CryptoContext::InitFromSecret(const ByteSpan & secret, const ByteSpan
 #endif
 
 #if defined(ENABLE_HSM_HKDF) && defined(ENABLE_HSM_EC_KEY)
-    if (secret.size() == 32) { // REMOVE THIS CHECK. FIND OTHER WAY TO INDENITY WHEN TO USE SECRET FROM OBJECT
+    if (secret.size() == 32)
+    { // REMOVE THIS CHECK. FIND OTHER WAY TO INDENITY WHEN TO USE SECRET FROM OBJECT
         mHKDF.setKeyId(kKeyId_ecdh_sh_sec_inobj_keyid);
     }
 #endif

@@ -43,7 +43,6 @@ struct keyidFabIdMapping_t
     0,
 };
 
-
 #define ENABLE_PERSISTENT_FABRIC_KEY_TABLE 0
 
 #if ENABLE_PERSISTENT_FABRIC_KEY_TABLE
@@ -87,7 +86,8 @@ CHIP_ERROR readPersistentFabricKeyTable()
             FabricIndex fabricIndex = cert[i + 4];
             i                       = i + (SE05x_KEY_ID_LEN + FABRIC_ID_LEN);
 
-            if(!IsValidFabricIndex(fabricIndex) || keyId == kKeyId_NotInitialized){
+            if (!IsValidFabricIndex(fabricIndex) || keyId == kKeyId_NotInitialized)
+            {
                 continue;
             }
 
