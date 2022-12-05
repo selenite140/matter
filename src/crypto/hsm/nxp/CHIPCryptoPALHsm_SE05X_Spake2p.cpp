@@ -299,15 +299,25 @@ CHIP_ERROR Spake2pHSM_P256_SHA256_HKDF_HMAC::Init(const uint8_t * context, size_
 }
 
 #if ENABLE_HSM_SPAKE_VERIFIER
+
+CHIP_ERROR GetWLTrustProvisionedIds(uint32_t itterationCnt, uint32_t *tp_w0in_id_v, uint32_t *tp_Lin_id_v)
+{
+    *tp_w0in_id_v = 0;
+    *tp_Lin_id_v = 0;
+    return CHIP_NO_ERROR;
+}
+
 CHIP_ERROR Spake2pHSM_P256_SHA256_HKDF_HMAC::BeginVerifier(const uint8_t * my_identity, size_t my_identity_len,
                                                            const uint8_t * peer_identity, size_t peer_identity_len,
                                                            const uint8_t * w0in, size_t w0in_len, const uint8_t * Lin,
                                                            size_t Lin_len)
 {
+#ifndef USE_SE05X_TP_KEYS_FOR_SPAKE2P_VERIFIER
     uint8_t w0in_mod[32] = {
         0,
     };
     size_t w0in_mod_len = 32;
+#endif
     smStatus_t smstatus = SM_NOT_OK;
 
     VerifyOrReturnError(w0in != nullptr, CHIP_ERROR_INVALID_ARGUMENT);
@@ -324,24 +334,46 @@ CHIP_ERROR Spake2pHSM_P256_SHA256_HKDF_HMAC::BeginVerifier(const uint8_t * my_id
 
     ChipLogProgress(Crypto, "SE05x: HSM - BeginVerifier");
 
+#ifndef USE_SE05X_TP_KEYS_FOR_SPAKE2P_VERIFIER
+    /* Using TP values.*/
     ReturnErrorOnFailure(FELoad(w0in, w0in_len, w0));
     ReturnErrorOnFailure(FEWrite(w0, w0in_mod, w0in_mod_len));
+#endif
     ReturnErrorOnFailure(create_init_crypto_obj(chip::Crypto::CHIP_SPAKE2P_ROLE::VERIFIER, &hsm_pake_context));
 
     smstatus = Se05x_API_PAKEConfigDevice(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, hsm_pake_context.spake_objId,
                                           SE05x_SPAKE2PLUS_DEVICE_TYPE_B);
     VerifyOrReturnError(smstatus == SM_OK, CHIP_ERROR(chip::ChipError::Range::kPlatform, smstatus));
 
+#ifndef USE_SE05X_TP_KEYS_FOR_SPAKE2P_VERIFIER
+    /* Using TP values.*/
     ReturnErrorOnFailure(se05x_set_key_for_spake(w0in_id_v, w0in_mod, w0in_mod_len, kSSS_KeyPart_Default, kSSS_CipherType_HMAC));
     ReturnErrorOnFailure(se05x_set_key_for_spake(Lin_id_v, Lin, Lin_len, kSSS_KeyPart_Default, kSSS_CipherType_HMAC));
+#endif
 
     smstatus = Se05x_API_PAKEInitDevice(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, hsm_pake_context.spake_objId,
                                         (uint8_t *) hsm_pake_context.spake_context, hsm_pake_context.spake_context_len,
                                         (uint8_t *) peer_identity, peer_identity_len, (uint8_t *) my_identity, my_identity_len);
     VerifyOrReturnError(smstatus == SM_OK, CHIP_ERROR(chip::ChipError::Range::kPlatform, smstatus));
 
+
+#ifdef USE_SE05X_TP_KEYS_FOR_SPAKE2P_VERIFIER
+    /* Using TP values.*/
+    uint32_t tp_w0in_id_v = 0;
+    uint32_t tp_Lin_id_v = 0;
+    CHIP_ERROR err = GetWLTrustProvisionedIds(SE05X_SPAKE2P_ITTERATION_COUNT, &tp_w0in_id_v, &tp_Lin_id_v);
+    if (CHIP_NO_ERROR != err)
+    {
+        ChipLogProgress(Crypto, "SE05x: Error in getting W0 and L TP ids");
+        return err;
+    }
+
+    smstatus = Se05x_API_PAKEInitCredentials(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx,
+                                             hsm_pake_context.spake_objId, tp_w0in_id_v, 0, tp_Lin_id_v);
+#else
     smstatus = Se05x_API_PAKEInitCredentials(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx,
                                              hsm_pake_context.spake_objId, w0in_id_v, 0, Lin_id_v);
+#endif
     VerifyOrReturnError(smstatus == SM_OK, CHIP_ERROR(chip::ChipError::Range::kPlatform, smstatus));
 
     state = CHIP_SPAKE2P_STATE::STARTED;

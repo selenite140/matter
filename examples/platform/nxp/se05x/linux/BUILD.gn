@@ -41,8 +41,6 @@ source_set("app-main") {
     "${chip_root}/examples/platform/linux/CommissionerMain.h",
     "${chip_root}/examples/platform/linux/ControllerShellCommands.cpp",
     "${chip_root}/examples/platform/linux/ControllerShellCommands.h",
-    "${chip_root}/examples/platform/linux/LinuxCommissionableDataProvider.cpp",
-    "${chip_root}/examples/platform/linux/LinuxCommissionableDataProvider.h",
     "${chip_root}/examples/platform/linux/NamedPipeCommands.cpp",
     "${chip_root}/examples/platform/linux/NamedPipeCommands.h",
     "${chip_root}/examples/platform/linux/Options.cpp",
@@ -53,6 +51,8 @@ source_set("app-main") {
     "${chip_root}/examples/platform/linux/testing/CustomCSRResponseOperationalKeyStore.h",
     "${chip_root}/examples/platform/nxp/se05x/DeviceAttestationSe05xCredsExample.cpp",
     "${chip_root}/examples/platform/nxp/se05x/DeviceAttestationSe05xCredsExample_v2.cpp",
+    "${chip_root}/examples/platform/nxp/se05x/LinuxCommissionableDataProviderSE05xTP.cpp",
+    "${chip_root}/examples/platform/nxp/se05x/LinuxCommissionableDataProviderSE05xTP.h",
     "AppMain.cpp",
   ]
 
