@@ -122,6 +122,13 @@ CHIP_ERROR CryptoContext::InitFromSecret(const ByteSpan & secret, const ByteSpan
 #endif
     }
 #endif
+
+#if defined(ENABLE_HSM_HKDF) && defined(ENABLE_HSM_EC_KEY)
+    if (secret.size() == 32) { // REMOVE THIS CHECK. FIND OTHER WAY TO INDENITY WHEN TO USE SECRET FROM OBJECT
+        mHKDF.setKeyId(kKeyId_ecdh_sh_sec_inobj_keyid);
+    }
+#endif
+
     ReturnErrorOnFailure(
         mHKDF.HKDF_SHA256(secret.data(), secret.size(), salt.data(), salt.size(), info, infoLen, &mKeys[0][0], sizeof(mKeys)));
 

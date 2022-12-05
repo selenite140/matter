@@ -42,7 +42,11 @@ CHIP_ERROR HKDF_shaHSM::HKDF_SHA256(const uint8_t * secret, const size_t secret_
 {
     CHIP_ERROR error       = CHIP_ERROR_INTERNAL;
     sss_object_t keyObject = { 0 };
+#if SSS_HAVE_APPLET_SE051_H
+    if (salt_length > 256 || info_length > 80 || secret_length > 256 || out_length > 768)
+#else
     if (salt_length > 64 || info_length > 80 || secret_length > 256 || out_length > 768)
+#endif
     {
         /* Length not supported by se05x. Rollback to SW */
         return HKDF_sha::HKDF_SHA256(secret, secret_length, salt, salt_length, info, info_length, out_buffer, out_length);
@@ -84,7 +88,9 @@ CHIP_ERROR HKDF_shaHSM::HKDF_SHA256(const uint8_t * secret, const size_t secret_
 
     error = CHIP_NO_ERROR;
 exit:
-    sss_key_store_erase_key(&gex_sss_chip_ctx.ks, &keyObject);
+    if (keyid == kKeyId_hkdf_sha256_hmac_keyid) {
+        sss_key_store_erase_key(&gex_sss_chip_ctx.ks, &keyObject);
+    }
 
     return error;
 }

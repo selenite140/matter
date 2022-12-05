@@ -121,6 +121,7 @@ public:
         provisioned_key = false;
         is_persistent = false;
         keyid           = 0;
+        shared_secret_keyid = 0;
     }
 
     ~P256KeypairHSM();
@@ -148,9 +149,12 @@ public:
 
     uint32_t GetKeyId(void) { return keyid; }
 
+    void SetSharedSecretKeyId(uint32_t id) { shared_secret_keyid = id; }
+
 private:
     uint32_t keyid;
     P256PublicKeyHSM mPublicKeyHSM;
+    uint32_t shared_secret_keyid;
 };
 
 #endif //#if ENABLE_HSM_GENERATE_EC_KEY

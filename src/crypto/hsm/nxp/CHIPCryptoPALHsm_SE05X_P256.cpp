@@ -260,6 +260,7 @@ CHIP_ERROR P256KeypairHSM::Deserialize(P256SerializedKeypair & input)
 CHIP_ERROR P256KeypairHSM::ECDH_derive_secret(const P256PublicKey & remote_public_key, P256ECDHDerivedSecret & out_secret) const
 {
     size_t secret_length = (out_secret.Length() == 0) ? out_secret.Capacity() : out_secret.Length();
+    sss_object_t keyObject = { 0 };
 
     VerifyOrReturnError(keyid != kKeyId_NotInitialized, CHIP_ERROR_HSM);
 
@@ -273,11 +274,41 @@ CHIP_ERROR P256KeypairHSM::ECDH_derive_secret(const P256PublicKey & remote_publi
 
     VerifyOrReturnError(gex_sss_chip_ctx.ks.session != nullptr, CHIP_ERROR_INTERNAL);
 
-    const smStatus_t smstatus = Se05x_API_ECGenSharedSecret(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, keyid,
-                                                            rem_pubKey, rem_pubKeyLen, Uint8::to_uchar(out_secret), &secret_length);
-    VerifyOrReturnError(smstatus == SM_OK, CHIP_ERROR_INTERNAL);
+    if(shared_secret_keyid != kKeyId_NotInitialized)
+    {
+        /* Destination keyid passed from application. Use inobject ECDH */
 
-    return out_secret.SetLength(secret_length);
+        uint8_t zeros[256] = {0,};
+        sss_status_t status = sss_key_object_init(&keyObject, &gex_sss_chip_ctx.ks);
+        VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+        status = sss_key_object_allocate_handle(&keyObject, shared_secret_keyid, kSSS_KeyPart_Default, kSSS_CipherType_HMAC, secret_length,
+                                                kKeyObject_Mode_Transient);
+        VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+        status = sss_key_store_set_key(&gex_sss_chip_ctx.ks, &keyObject, zeros, secret_length, secret_length * 8, NULL, 0);
+        VerifyOrReturnError(status == kStatus_SSS_Success, CHIP_ERROR_INTERNAL);
+
+        ChipLogDetail(Crypto, "ECDH_derive_secret: Using InObject APDU !");
+
+#if SSS_HAVE_SE05X_VER_GTE_06_00
+        const smStatus_t smstatus = Se05x_API_ECDHGenerateSharedSecret_InObject(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, keyid,
+                                                            rem_pubKey, rem_pubKeyLen, shared_secret_keyid, 0 /*invertEndiannes*/);
+#else
+        /* In object shared secret generetion is not supported in this version of SE05x.*/
+        smstatus = SM_NOT_OK;
+#endif
+        VerifyOrReturnError(smstatus == SM_OK, CHIP_ERROR_INTERNAL);
+
+        return out_secret.SetLength(32);
+    }
+    else {
+        const smStatus_t smstatus = Se05x_API_ECGenSharedSecret(&((sss_se05x_session_t *) &gex_sss_chip_ctx.session)->s_ctx, keyid,
+                                                            rem_pubKey, rem_pubKeyLen, Uint8::to_uchar(out_secret), &secret_length);
+        VerifyOrReturnError(smstatus == SM_OK, CHIP_ERROR_INTERNAL);
+
+        return out_secret.SetLength(secret_length);
+    }
 }
 
 /* EC Public key HSM implementation */

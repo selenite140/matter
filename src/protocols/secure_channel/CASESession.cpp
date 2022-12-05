@@ -45,6 +45,7 @@
 #include <transport/SessionManager.h>
 #if CHIP_CRYPTO_HSM
 #include <crypto/hsm/CHIPCryptoPALHsm.h>
+#include <crypto/hsm/nxp/CHIPCryptoPALHsm_SE05X_utils.h>
 #endif
 
 namespace {
@@ -730,7 +731,15 @@ CHIP_ERROR CASESession::SendSigma2()
     ReturnErrorOnFailure(mEphemeralKey->Initialize());
 
     // Generate a Shared Secret
+#if defined(ENABLE_HSM_HKDF) && defined(ENABLE_HSM_EC_KEY)
+    ((Crypto::P256KeypairHSM*)mEphemeralKey)->SetSharedSecretKeyId(kKeyId_ecdh_sh_sec_inobj_keyid);
+#endif
+
     ReturnErrorOnFailure(mEphemeralKey->ECDH_derive_secret(mRemotePubKey, mSharedSecret));
+
+#if defined(ENABLE_HSM_HKDF) && defined(ENABLE_HSM_EC_KEY)
+    ((Crypto::P256KeypairHSM*)mEphemeralKey)->SetSharedSecretKeyId(kKeyId_NotInitialized);
+#endif
 
     uint8_t msg_salt[kIPKSize + kSigmaParamRandomNumberSize + kP256_PublicKey_Length + kSHA256_Hash_Length];
 
@@ -738,10 +747,13 @@ CHIP_ERROR CASESession::SendSigma2()
     ReturnErrorOnFailure(ConstructSaltSigma2(ByteSpan(msg_rand), mEphemeralKey->Pubkey(), ByteSpan(mIPK), saltSpan));
 
     HKDF_sha_crypto mHKDF;
+#if defined(ENABLE_HSM_HKDF) && defined(ENABLE_HSM_EC_KEY)
+    mHKDF.setKeyId(kKeyId_ecdh_sh_sec_inobj_keyid);
+#endif
     uint8_t sr2k[CHIP_CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES];
     ReturnErrorOnFailure(mHKDF.HKDF_SHA256(mSharedSecret, mSharedSecret.Length(), saltSpan.data(), saltSpan.size(), kKDFSR2Info,
                                            kKDFInfoLength, sr2k, CHIP_CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES));
-
+    
     // Construct Sigma2 TBS Data
     size_t msg_r2_signed_len =
         TLV::EstimateStructOverhead(kMaxCHIPCertLength, kMaxCHIPCertLength, kP256_PublicKey_Length, kP256_PublicKey_Length);
@@ -1293,6 +1305,10 @@ CHIP_ERROR CASESession::HandleSigma3(System::PacketBufferHandle && msg)
         SuccessOrExit(err);
 
         HKDF_sha_crypto mHKDF;
+
+#if defined(ENABLE_HSM_HKDF) && defined(ENABLE_HSM_EC_KEY)
+        mHKDF.setKeyId(kKeyId_ecdh_sh_sec_inobj_keyid);
+#endif
         err = mHKDF.HKDF_SHA256(mSharedSecret, mSharedSecret.Length(), saltSpan.data(), saltSpan.size(), kKDFSR3Info,
                                 kKDFInfoLength, sr3k, CHIP_CRYPTO_SYMMETRIC_KEY_LENGTH_BYTES);
         SuccessOrExit(err);

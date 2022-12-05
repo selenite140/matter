@@ -50,6 +50,7 @@ enum keyid_values
     kKeyId_spake2p_v_tgt_sec_obj,
     kKeyId_spake2p_p_tgt_sec_obj,
     kKeyId_fabric_key_table_keyid,
+    kKeyId_ecdh_sh_sec_inobj_keyid,
 };
 
 // Enable the below macro to make spake HSM imlementation reentrant.

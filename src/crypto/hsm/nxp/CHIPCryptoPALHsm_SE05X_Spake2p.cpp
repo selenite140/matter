@@ -121,7 +121,7 @@ CHIP_ERROR create_init_crypto_obj(chip::Crypto::CHIP_SPAKE2P_ROLE role, hsm_pake
 
     if (create_crypto_obj)
     {
-#if SE05X_SECURE_OBJECT_FOR_SPAKE2P_SESSION_KEYS
+#if defined(ENABLE_HSM_HKDF) && (SE05X_SECURE_OBJECT_FOR_SPAKE2P_SESSION_KEYS == 1)
 
         static sss_policy_u commonPol;
         commonPol.type                     = KPolicy_Common;
