@@ -40,8 +40,11 @@
 #define CERT_DECLARATION_DATA_SE05X_ID 0x7D300002
 
 /* Device attestation key ids (Used with internal sign) */
-#define DEV_ATTESTATION_KEY_SE05X_ID_IS 0x7D300003
-#define DEV_ATTESTATION_KEY_SE05X_ID_IS_TBS 0x7D300004
+#if USE_SE05X_TRUST_PROV_KEYS_FOR_DEV_ATTEST
+    #define DEV_ATTESTATION_KEY_SE05X_ID_IS_TP 0x7FFF2030
+#else
+    #define DEV_ATTESTATION_KEY_SE05X_ID_IS 0x7D300003
+#endif
 
 #define TAG1_ID 0x7D300005
 #define TAG1_LEN_ID 0x7D300006
@@ -233,7 +236,12 @@ CHIP_ERROR ExampleSe05xDACProviderv2::SignWithDeviceAttestationKey(const ByteSpa
     uint8_t signature_se05x[Crypto::kMax_ECDSA_Signature_Length_Der] = { 0 };
     size_t signature_se05x_len                                       = sizeof(signature_se05x);
 
+#if USE_SE05X_TRUST_PROV_KEYS_FOR_DEV_ATTEST
+    ChipLogDetail(Crypto, "Using Trust provisioned DA keyPair");
+    err = se05xPerformInternalSign(DEV_ATTESTATION_KEY_SE05X_ID_IS_TP, signature_se05x, &signature_se05x_len);
+#else
     err = se05xPerformInternalSign(DEV_ATTESTATION_KEY_SE05X_ID_IS, signature_se05x, &signature_se05x_len);
+#endif
     ReturnErrorOnFailure(err);
 
     err = chip::Crypto::EcdsaAsn1SignatureToRaw(chip::Crypto::kP256_FE_Length, ByteSpan{ signature_se05x, signature_se05x_len },

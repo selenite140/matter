@@ -302,8 +302,93 @@ CHIP_ERROR Spake2pHSM_P256_SHA256_HKDF_HMAC::Init(const uint8_t * context, size_
 
 CHIP_ERROR GetWLTrustProvisionedIds(uint32_t itterationCnt, uint32_t *tp_w0in_id_v, uint32_t *tp_Lin_id_v)
 {
-    *tp_w0in_id_v = 0;
-    *tp_Lin_id_v = 0;
+
+    switch (SE05X_VERIFIER_SET_NUM){
+    case 1:
+        {
+            if (SE05X_SPAKE2P_ITTERATION_COUNT == 1000){
+                *tp_w0in_id_v = 0x7FFF2011;
+                *tp_Lin_id_v = 0x7FFF2021;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 5000){
+                *tp_w0in_id_v = 0x7FFF2012;
+                *tp_Lin_id_v = 0x7FFF2022;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 10000){
+                *tp_w0in_id_v = 0x7FFF2013;
+                *tp_Lin_id_v = 0x7FFF2023;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 50000){
+                *tp_w0in_id_v = 0x7FFF2014;
+                *tp_Lin_id_v = 0x7FFF2024;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 100000){
+                *tp_w0in_id_v = 0x7FFF2015;
+                *tp_Lin_id_v = 0x7FFF2025;
+            }
+            else {
+                return CHIP_ERROR_INTERNAL;
+            }
+        }
+        break;
+    case 2:
+        {
+            if (SE05X_SPAKE2P_ITTERATION_COUNT == 1000){
+                *tp_w0in_id_v = 0x7FFF2016;
+                *tp_Lin_id_v = 0x7FFF2026;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 5000){
+                *tp_w0in_id_v = 0x7FFF2017;
+                *tp_Lin_id_v = 0x7FFF2027;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 10000){
+                *tp_w0in_id_v = 0x7FFF2018;
+                *tp_Lin_id_v = 0x7FFF2028;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 50000){
+                *tp_w0in_id_v = 0x7FFF2019;
+                *tp_Lin_id_v = 0x7FFF2029;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 100000){
+                *tp_w0in_id_v = 0x7FFF201A;
+                *tp_Lin_id_v = 0x7FFF202A;
+            }
+            else {
+                return CHIP_ERROR_INTERNAL;
+            }
+        }
+        break;
+    case 3:
+        {
+            if (SE05X_SPAKE2P_ITTERATION_COUNT == 1000){
+                *tp_w0in_id_v = 0x7FFF201B;
+                *tp_Lin_id_v = 0x7FFF202B;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 5000){
+                *tp_w0in_id_v = 0x7FFF201C;
+                *tp_Lin_id_v = 0x7FFF202C;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 10000){
+                *tp_w0in_id_v = 0x7FFF201D;
+                *tp_Lin_id_v = 0x7FFF202D;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 50000){
+                *tp_w0in_id_v = 0x7FFF201E;
+                *tp_Lin_id_v = 0x7FFF202E;
+            }
+            else if (SE05X_SPAKE2P_ITTERATION_COUNT == 100000){
+                *tp_w0in_id_v = 0x7FFF201F;
+                *tp_Lin_id_v = 0x7FFF202F;
+            }
+            else {
+                return CHIP_ERROR_INTERNAL;
+            }
+        }
+        break;
+    default:
+            return CHIP_ERROR_INTERNAL;
+    }
+
     return CHIP_NO_ERROR;
 }
 
