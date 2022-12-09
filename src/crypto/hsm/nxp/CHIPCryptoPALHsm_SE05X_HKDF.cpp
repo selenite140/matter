@@ -65,6 +65,8 @@ CHIP_ERROR HKDF_shaHSM::HKDF_SHA256(const uint8_t * secret, const size_t secret_
 
     VerifyOrReturnError(keyid != kKeyId_NotInitialized, CHIP_ERROR_HSM);
 
+    ChipLogDetail(Crypto, "HKDF_SHA256: Using SE05X for HKDF!");
+
     se05x_sessionOpen();
     VerifyOrReturnError(gex_sss_chip_ctx.ks.session != NULL, CHIP_ERROR_INTERNAL);
 

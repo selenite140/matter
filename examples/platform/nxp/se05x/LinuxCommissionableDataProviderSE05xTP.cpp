@@ -42,6 +42,8 @@ constexpr size_t kSpake2p_Passcode_Length_SE05x  = 4;
 constexpr uint32_t kSpake2p_Pwd_Salt_Bin_File_id = 0x7FFF2000;
 uint32_t setUpPINCode_se05x = 0;
 
+#define BCD_TO_DEC(x) (x - 6 * (x >> 4))
+
 CHIP_ERROR GeneratePaseSalt(std::vector<uint8_t> & spake2pSaltVector)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
@@ -62,7 +64,7 @@ CHIP_ERROR GeneratePaseSalt(std::vector<uint8_t> & spake2pSaltVector)
     spake2pSaltVector.resize(kSaltLen);
     memcpy(spake2pSaltVector.data(), cert + offset + kSpake2p_Passcode_Length_SE05x, kSaltLen);
 
-    setUpPINCode_se05x = (cert[offset] << 24) + (cert[offset+1] << 16) + (cert[offset+2] << 8) + (cert[offset+3] << 0);
+    setUpPINCode_se05x = (BCD_TO_DEC(cert[offset+3])) + (100 * BCD_TO_DEC(cert[offset+2])) + (10000 * BCD_TO_DEC(cert[offset+1])) + (1000000 * BCD_TO_DEC(cert[offset]));
 
     return CHIP_NO_ERROR;
 }
