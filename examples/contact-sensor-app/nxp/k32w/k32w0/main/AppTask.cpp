@@ -135,9 +135,9 @@ CHIP_ERROR AppTask::Init()
 #if CONFIG_CHIP_K32W0_REAL_FACTORY_DATA
     // Initialize factory data provider
     ReturnErrorOnFailure(AppTask::FactoryDataProvider::GetDefaultInstance().Init());
-#if CHIP_DEVICE_CONFIG_ENABLE_DEVICE_INSTANCE_INFO_PROVIDER
+//#if CHIP_DEVICE_CONFIG_ENABLE_DEVICE_INSTANCE_INFO_PROVIDER
 	SetDeviceInstanceInfoProvider(&AppTask::FactoryDataProvider::GetDefaultInstance());
-#endif
+//#endif
 	SetDeviceAttestationCredentialsProvider(&AppTask::FactoryDataProvider::GetDefaultInstance());
 	SetCommissionableDataProvider(&AppTask::FactoryDataProvider::GetDefaultInstance());
 #else
@@ -207,6 +207,130 @@ CHIP_ERROR AppTask::Init()
         PlatformMgr().ScheduleWork(AppTask::InitOTA, 0);
     }
 #endif
+	
+    CHIP_ERROR status = CHIP_NO_ERROR;
+
+    uint32_t softwareVersion = 0;
+    status                   = ConfigurationMgr().GetSoftwareVersion(softwareVersion);
+    K32W_LOG("software version %ld", softwareVersion);
+
+    char softwareVersionString[DeviceLayer::ConfigurationManager::kMaxSoftwareVersionStringLength + 1] = { 0 };
+    status = ConfigurationMgr().GetSoftwareVersionString(softwareVersionString, sizeof(softwareVersionString));
+    K32W_LOG("software verstr %s", softwareVersionString);
+
+    char uniqueId[DeviceLayer::ConfigurationManager::kMaxUniqueIDLength + 1] = { 0 };
+    status                     = ConfigurationMgr().GetUniqueId(uniqueId, sizeof(uniqueId));
+
+    K32W_LOG("unique id %s", uniqueId);
+    ChipLogError(NotSpecified, "status %" CHIP_ERROR_FORMAT, status.Format());
+    // TODO: Remove defaulting once proper runtime defaulting of unimplemented factory data is done
+    if (status == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND || status == CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE)
+    {
+        uniqueId[0] = '\0';
+        status      = CHIP_NO_ERROR;
+    }
+
+#if CONFIG_CHIP_K32W0_REAL_FACTORY_DATA
+    char vendorName[DeviceLayer::ConfigurationManager::kMaxVendorNameLength + 1] = { 0 };
+    status                       = GetDeviceInstanceInfoProvider()->GetVendorName(vendorName, sizeof(vendorName));
+    K32W_LOG("vendor name %s", vendorName);
+
+    uint16_t vendorId = 0;
+    status            = GetDeviceInstanceInfoProvider()->GetVendorId(vendorId);
+    K32W_LOG("vendor id %x", vendorId);
+ 
+    char productName[DeviceLayer::ConfigurationManager::kMaxProductNameLength + 1] = { 0 };
+    status                        = GetDeviceInstanceInfoProvider()->GetProductName(productName, sizeof(productName));
+    K32W_LOG("product name %s", productName);
+
+    uint16_t productId = 0;
+    status             = GetDeviceInstanceInfoProvider()->GetProductId(productId);
+    K32W_LOG("product id %x", productId);
+
+    uint16_t hardwareVersion = 0;
+    status                   = GetDeviceInstanceInfoProvider()->GetHardwareVersion(hardwareVersion);
+    K32W_LOG("hardware version %x", hardwareVersion);
+
+    char hardwareVersionString[DeviceLayer::ConfigurationManager::kMaxHardwareVersionStringLength + 1] = { 0 };
+    status = GetDeviceInstanceInfoProvider()->GetHardwareVersionString(hardwareVersionString, sizeof(hardwareVersionString));
+    K32W_LOG("hardware verstr %s", hardwareVersionString);
+
+    char manufacturingDateString[DeviceLayer::ConfigurationManager::kMaxManufacturingDateLength + 1] = { 0 };
+    uint16_t manufacturingYear;
+    uint8_t manufacturingMonth;
+    uint8_t manufacturingDayOfMonth;
+    status =
+        GetDeviceInstanceInfoProvider()->GetManufacturingDate(manufacturingYear, manufacturingMonth, manufacturingDayOfMonth);
+
+    // TODO: Remove defaulting once proper runtime defaulting of unimplemented factory data is done
+    if (status == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND || status == CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE)
+    {
+        manufacturingYear       = 2020;
+        manufacturingMonth      = 1;
+        manufacturingDayOfMonth = 1;
+        status                  = CHIP_NO_ERROR;
+    }
+
+    if (status == CHIP_NO_ERROR)
+    {
+        // Format is YYYYMMDD
+        snprintf(manufacturingDateString, sizeof(manufacturingDateString), "%04u%02u%02u", manufacturingYear,
+                    manufacturingMonth, manufacturingDayOfMonth);
+    }
+
+    char partNumber[DeviceLayer::ConfigurationManager::kMaxPartNumberLength + 1] = { 0 };
+    status                       = ConfigurationMgr().GetPartNumber(partNumber, sizeof(partNumber));
+
+    K32W_LOG("part number %s", partNumber);
+    ChipLogError(NotSpecified, "status %" CHIP_ERROR_FORMAT, status.Format());
+    // TODO: Remove defaulting once proper runtime defaulting of unimplemented factory data is done
+    if (status == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND || status == CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE)
+    {
+        partNumber[0] = '\0';
+        status        = CHIP_NO_ERROR;
+    }
+    
+
+    char productUrl[DeviceLayer::ConfigurationManager::kMaxProductURLLength + 1] = { 0 };
+    status                       = ConfigurationMgr().GetProductURL(productUrl, sizeof(productUrl));
+
+    K32W_LOG("product url %s", productUrl);
+    ChipLogError(NotSpecified, "status %" CHIP_ERROR_FORMAT, status.Format());
+    // TODO: Remove defaulting once proper runtime defaulting of unimplemented factory data is done
+    if (status == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND || status == CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE)
+    {
+        productUrl[0] = '\0';
+        status        = CHIP_NO_ERROR;
+    }
+    
+
+    char productLabel[DeviceLayer::ConfigurationManager::kMaxProductLabelLength + 1] = { 0 };
+    status                         = ConfigurationMgr().GetProductLabel(productLabel, sizeof(productLabel));
+
+    K32W_LOG("product label %s", productLabel);
+    ChipLogError(NotSpecified, "status %" CHIP_ERROR_FORMAT, status.Format());
+    // TODO: Remove defaulting once proper runtime defaulting of unimplemented factory data is done
+    if (status == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND || status == CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE)
+    {
+        productLabel[0] = '\0';
+        status          = CHIP_NO_ERROR;
+    }
+    
+    char serialNumberString[DeviceLayer::ConfigurationManager::kMaxSerialNumberLength + 1] = { 0 };
+    status = GetDeviceInstanceInfoProvider()->GetSerialNumber(serialNumberString, sizeof(serialNumberString));
+
+    // TODO: Remove defaulting once proper runtime defaulting of unimplemented factory data is done
+    if (status == CHIP_DEVICE_ERROR_CONFIG_NOT_FOUND || status == CHIP_ERROR_UNSUPPORTED_CHIP_FEATURE)
+    {
+        serialNumberString[0] = '\0';
+        status                = CHIP_NO_ERROR;
+    }
+    K32W_LOG("serial number %s", serialNumberString);
+
+
+
+#endif
+
     return err;
 }
 
@@ -398,6 +522,7 @@ void AppTask::HandleKeyboard(void)
 {
     uint8_t keyEvent = 0xFF;
     uint8_t pos      = 0;
+    uint32_t flash_address=0;
 
     while (eventMask)
     {
@@ -438,6 +563,21 @@ void AppTask::HandleKeyboard(void)
             ButtonEventHandler(BLE_BUTTON, RESET_BUTTON_PUSH);
             break;
 #endif
+        case gKBD_EventVeryLongPB1_c:
+            K32W_LOG("pb1 very long press");
+            while (EEPROM_isBusy());
+            for (uint8_t n_erase=0; n_erase<16;n_erase++)
+            {
+                EEPROM_EraseBlock(flash_address, 65536);
+                flash_address += 65536;
+                K32W_LOG(".")
+            #if !cPWR_UsePowerDownMode
+                sStatusLED.Blink(100, 100);
+                sStatusLED.Animate();
+            #endif
+            }
+            K32W_LOG("erase completed!")
+            break;
         default:
             break;
         }
