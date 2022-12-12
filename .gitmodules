@@ -292,3 +292,6 @@
 	path = third_party/libtrusty/repo
 	url = http://androidsource.ap.freescale.net/project/platform/libtrusty
 	branch = master
+[submodule "third_party/libtrustymatter/repo"]
+	path = third_party/libtrustymatter/repo
+	url = http://androidsource.ap.freescale.net/project/a/libtrustymatter
