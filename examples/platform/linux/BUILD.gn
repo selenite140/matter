@@ -47,6 +47,8 @@ source_set("app-main") {
     "NamedPipeCommands.h",
     "Options.cpp",
     "Options.h",
+    "DeviceAttestationCreds.cpp",
+    "DeviceAttestationCreds.h",
     "testing/CustomCSRResponse.cpp",
     "testing/CustomCSRResponse.h",
     "testing/CustomCSRResponseOperationalKeyStore.cpp",
@@ -70,6 +72,7 @@ source_set("app-main") {
     "${chip_root}/src/lib",
     "${chip_root}/src/lib/shell",
     "${chip_root}/src/lib/shell:shell_core",
+    "${chip_root}/third_party/libtrustymatter",
   ]
 
   if (chip_enable_transport_trace) {

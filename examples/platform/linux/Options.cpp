@@ -29,7 +29,7 @@
 #include <lib/support/Base64.h>
 #include <lib/support/BytesToHex.h>
 
-#include <credentials/examples/DeviceAttestationCredsExample.h>
+#include <DeviceAttestationCreds.h>
 
 using namespace chip;
 using namespace chip::ArgParser;
@@ -512,7 +512,7 @@ LinuxDeviceOptions & LinuxDeviceOptions::GetInstance()
 {
     if (gDeviceOptions.dacProvider == nullptr)
     {
-        gDeviceOptions.dacProvider = chip::Credentials::Examples::GetExampleDACProvider();
+        gDeviceOptions.dacProvider = chip::Credentials::Trusty::GetTrustyDACProvider();
     }
     return gDeviceOptions;
 }
