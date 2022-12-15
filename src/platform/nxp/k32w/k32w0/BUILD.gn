@@ -29,6 +29,8 @@ static_library("k32w0") {
     "../../../SingletonConfigurationManager.cpp",
     "../common/RamStorage.cpp",
     "../common/RamStorage.h",
+    "../common/RamStorageKey.cpp",
+    "../common/RamStorageKey.h",
     "BLEManagerImpl.cpp",
     "BLEManagerImpl.h",
     "CHIPDevicePlatformConfig.h",
@@ -45,8 +47,6 @@ static_library("k32w0") {
     "DiagnosticDataProviderImpl.h",
     "K32W0Config.cpp",
     "K32W0Config.h",
-    "K32W0FactoryDataProvider.cpp",
-    "K32W0FactoryDataProvider.h",
     "KeyValueStoreManagerImpl.cpp",
     "KeyValueStoreManagerImpl.h",
     "Logging.cpp",
@@ -65,6 +65,13 @@ static_library("k32w0") {
     "${chip_root}/src/credentials/examples/ExamplePAI.h",
   ]
 
+  if (chip_with_factory_data == 1) {
+    sources += [
+      "K32W0FactoryDataProvider.cpp",
+      "K32W0FactoryDataProvider.h",
+    ]
+  }
+
   if (chip_with_low_power != 0) {
     sources += [ "LowPowerHooks.cpp" ]
   }
@@ -79,6 +86,31 @@ static_library("k32w0") {
   deps = []
 
   public_deps = [ "${chip_root}/src/platform:platform_base" ]
+
+  if (chip_crypto == "platform") {
+    if(chip_crypto_flavour == "tinycrypt") {
+
+      sources += [
+        "${chip_root}/src/platform/nxp/common/crypto/CHIPCryptoPALTinyCrypt.cpp",
+      ]
+
+      public_deps += [
+        "${mbedtls_root}:mbedtls",
+      ]
+    }
+
+    if(chip_crypto_flavour == "NXP-Ultrafast-P256") {
+
+      sources += [
+        "${chip_root}/src/platform/nxp/k32w/k32w0/crypto/CHIPCryptoPALNXPUltrafastP256.cpp",
+      ]
+
+      public_deps += [
+        "${mbedtls_root}:mbedtls",
+        "${chip_root}/third_party/nxp/k32w0_sdk:k32w0_sdk",
+      ]
+    }
+  }
 
   if (chip_enable_openthread) {
     sources += [

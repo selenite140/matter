@@ -30,8 +30,7 @@ using namespace chip::Crypto;
 
 /**
  * Known issues:
- * 1. The current HSM keystore implementation is tested only with one fabric. To be tested with multiple fabrics.
- * 2. Logic to read the HSM and create the fabricTable from the persistent keys after reboot is missing .
+ * 1. Logic to read the HSM and create the fabricTable from the persistent keys after reboot is missing .
  */
 
 struct keyidFabIdMapping_t

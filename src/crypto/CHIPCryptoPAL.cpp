@@ -30,6 +30,9 @@
 #include <lib/support/CodeUtils.h>
 #include <lib/support/Span.h>
 #include <string.h>
+#if CHIP_CRYPTO_HSM
+#include <crypto/hsm/CHIPCryptoPALHsm.h>
+#endif
 
 using chip::ByteSpan;
 using chip::MutableByteSpan;

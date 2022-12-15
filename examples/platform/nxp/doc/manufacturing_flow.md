@@ -21,34 +21,57 @@ possible for a final stage application to generate its own manufacturing data:
     may also have a different lifecycle.
 
     ```
-    user@ubuntu:~/Desktop/git/connectedhomeip$ ./examples/platform/nxp/k32w/k32w0/scripts/generate_cert.sh  ./src/tools/chip-cert/out/chip-cert
+    user@ubuntu:~/Desktop/git/connectedhomeip$ ./scripts/tools/nxp/generate_cert.sh ./src/tools/chip-cert/out/chip-cert
     ```
 
 *   Generate new provisioning data and convert all the data to a binary:
 
     ```
-    user@ubuntu:~/Desktop/git/connectedhomeip$  python3 ./scripts/tools/nxp/generate_nxp_chip_factory_bin.py -i 10000 -s ABCDEFGHIJKLMNOPQRSXYZ -p 14014 -d 1000 --dac_cert /home/ubuntu/manufacturing/Chip-DAC-NXP-Cert.der --dac_key /home/ubuntu/manufacturing/Chip-DAC-NXP-Key.der --pai_cert /home/ubuntu/manufacturing/Chip-PAI-NXP-Cert.der --spake2p_path ./src/tools/spake2p/out/spake2p --out out.bin
+    user@ubuntu:~/Desktop/git/connectedhomeip$  python3 ./scripts/tools/nxp/factory_data_generator/generate.py -i 10000 -s UXKLzwHdN3DZZLBaL2iVGhQi/OoQwIwJRQV4rpEalbA= -p 14014 -d 1000 --vid 0x1037 --pid 0xa220 --vendor_name "NXP Semiconductors" --product_name "Lighting app" --serial_num "SN:12345678" --date "2022-10-21" --hw_version 1 --hw_version_str "1.0" --cert_declaration /home/ubuntu/manufacturing/Chip-Test-CD-1037-a220.der --dac_cert /home/ubuntu/manufacturing/Chip-DAC-NXP-Cert.der --dac_key /home/ubuntu/manufacturing/Chip-DAC-NXP-Key.der --pai_cert /home/ubuntu/manufacturing/Chip-PAI-NXP-Cert.der --spake2p_path ./src/tools/spake2p/out/spake2p --out out.bin
+    ```
+
+-   Same example as above, but with an already generated verifier passed as input:
+    ```
+    user@ubuntu:~/Desktop/git/connectedhomeip$  python3 ./scripts/tools/nxp/factory_data_generator/generate.py -i 10000 -s UXKLzwHdN3DZZLBaL2iVGhQi/OoQwIwJRQV4rpEalbA= -p 14014 -d 1000 --vid 0x1037 --pid 0xa220 --vendor_name "NXP Semiconductors" --product_name "Lighting app" --serial_num "SN:12345678" --date "2022-10-21" --hw_version 1 --hw_version_str "1.0" --cert_declaration /home/ubuntu/manufacturing/Chip-Test-CD-1037-a220.der --dac_cert /home/ubuntu/manufacturing/Chip-DAC-NXP-Cert.der --dac_key /home/ubuntu/manufacturing/Chip-DAC-NXP-Key.der --pai_cert /home/ubuntu/manufacturing/Chip-PAI-NXP-Cert.der --spake2p_path ./src/tools/spake2p/out/spake2p --spake2p_verifier ivD5n3L2t5+zeFt6SjW7BhHRF30gFXWZVvvXgDxgCNcE+BGuTA5AUaVm3qDZBcMMKn1a6CakI4SxyPUnJr0CpJ4pwpr0DvpTlkQKqaRvkOQfAQ1XDyf55DuavM5KVGdDrg== --out out.bin
+    ```
+
+-   Generate new provisioning data and convert all the data to a binary (encrypted data with the AES key):
+    ```
+    user@ubuntu:~/Desktop/git/connectedhomeip$  python3 ./scripts/tools/nxp/factory_data_generator/generate.py -i 10000 -s UXKLzwHdN3DZZLBaL2iVGhQi/OoQwIwJRQV4rpEalbA= -p 14014 -d 1000 --vid 0x1037 --pid 0xa220 --vendor_name "NXP Semiconductors" --product_name "Lighting app" --serial_num "SN:12345678" --date "2022-10-21" --hw_version 1 --hw_version_str "1.0" --cert_declaration /home/ubuntu/manufacturing/Chip-Test-CD-1037-a220.der --dac_cert /home/ubuntu/manufacturing/Chip-DAC-NXP-Cert.der --dac_key /home/ubuntu/manufacturing/Chip-DAC-NXP-Key.der --pai_cert /home/ubuntu/manufacturing/Chip-PAI-NXP-Cert.der --spake2p_path ./src/tools/spake2p/out/spake2p --out outEncrypted.bin --aes128_key 2B7E151628AED2A6ABF7158809CF4F3C
     ```
 
     Here is the interpretation of the parameters:
 
     ```
-    -i             -> SPAKE2+ iteration
-    -s             -> SPAKE2+ salt
-    -p             -> SPAKE2+ passcode
-    - d            -> discriminator
-    --dac_cert     -> path to the DAC (der format) location
-    --dac_key      -> path to the DAC key (der format) location
-    --pai_cert     -> path to the PAI (der format) location
-    --spake2p_path -> path to the spake2p tool (compile it from ./src/tools/spake2p)
-    --out          -> name of the binary that will be used for storing all the generated data
-
+    -i                 -> SPAKE2+ iteration
+    -s                 -> SPAKE2+ salt (passed as base64 encoded string)
+    -p                 -> SPAKE2+ passcode
+    -d                 -> discriminator
+    --vid              -> Vendor ID
+    --pid              -> Product ID
+    --vendor_name      -> Vendor Name
+    --product_name     -> Product Name
+    --serial_num       -> Serial Number
+    --date             -> Manufacturing Date (YYYY-MM-DD format)
+    --hw_version       -> Hardware Version as number
+    --hw_version_str   -> Hardware Version as string
+    --cert_declaration -> path to the Certification Declaration (der format) location
+    --dac_cert         -> path to the DAC (der format) location
+    --dac_key          -> path to the DAC key (der format) location
+    --pai_cert         -> path to the PAI (der format) location
+    --spake2p_path     -> path to the spake2p tool (compile it from ./src/tools/spake2p)
+    --out              -> name of the binary that will be used for storing all the generated data
+    --aes128_key       -> 128 bits AES key used to encrypt the whole dataset
+    --spake2p_verifier -> SPAKE2+ verifier (passed as base64 encoded string). If this option is set,
+                          all SPAKE2+ inputs will be encoded in the final binary. The spake2p tool
+                          will not be used to generate a new verifier on the fly.
     ```
 
 *   Write out.bin to the internal flash at location 0x9D200:
 
+    For the K32W0x1 platform, the binary needs to be written in the internal flash at location 0x9D600 using DK6Programmer:
     ```
-    DK6Programmer.exe  -Y -V2 -s <COM_PORT> -P 1000000 -Y -p FLASH@0x9D200="out.bin"
+    DK6Programmer.exe -Y -V2 -s <COM_PORT> -P 1000000 -Y -p FLASH@0x9D600="out.bin"
     ```
 
 *   Generate a new CD (certification declaration):
@@ -105,12 +128,5 @@ possible for a final stage application to generate its own manufacturing data:
 
         Implementation of manufacturing data provisioning has been validated using test certificates generated by OpenSSL 1.1.1l.
 
-        Also, demo DAC, PAI and PAA certificates needed in case _chip_with_factory_data=1_ is used can be found in examples/platform/nxp/k32w/k32w0/scripts/demo_generated_certs.
-
-        dut1/dut2 folders contains different DACs/Private Keys and can be used for testing topologies with 2 DUTS.
-
-        out_dut1.bin/out2_dut2.bin contains the corresponding DACs/PAIs generated using generate_nxp_chip_factory_bin.py script. The discriminator is 14014 and the passcode is 1000.
-
-        These demo certificates are working with the CDs installed in CHIPProjectConfig.h.
-
+        Also, demo DAC, PAI and PAA certificates needed in case _chip_with_factory_data=1_ is used can be found in scripts/tools/nxp/demo_generated_certs.
     <a name="flashdebug"></a>

@@ -31,6 +31,10 @@
 #include "FreeRtosHooks.h"
 #include "app_config.h"
 
+#if PDM_SAVE_IDLE
+#include <openthread/platform/settings.h>
+#endif
+
 using namespace ::chip;
 using namespace ::chip::Inet;
 using namespace ::chip::DeviceLayer;
@@ -117,6 +121,12 @@ extern "C" void main_task(void const * argument)
 
 #ifdef K32WMCM_APP_BUILD
     APP_SetHighTxPowerMode();
+#endif
+
+#if PDM_SAVE_IDLE
+    /* OT Settings needs to be initialized
+     * early as XCVR is making use of it */
+    otPlatSettingsInit(NULL, NULL, 0);
 #endif
 
     err = PlatformMgr().InitChipStack();

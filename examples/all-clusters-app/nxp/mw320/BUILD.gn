@@ -30,6 +30,7 @@ mw320_sdk("sdk") {
     "${examples_plat_dir}/app/project_include",
     "${chip_root}/src/app/util",
     "${chip_root}/examples/all-clusters-app/nxp/mw320/include",
+    "${chip_root}/examples/all-clusters-app/nxp/mw320/main/include",
   ]
 
   sources = [
@@ -74,10 +75,12 @@ mw320_executable("shell_mw320") {
     "${chip_root}/examples/all-clusters-app/all-clusters-common/src/bridged-actions-stub.cpp",
     "${chip_root}/examples/all-clusters-app/all-clusters-common/src/static-supported-modes-manager.cpp",
     "${chip_root}/src/lib/shell/streamer_mw320.cpp",
-    "binding-handler.cpp",
+    "main/binding-handler.cpp",
+    "main/AppTask.cpp",
+    "main/ZclCallback.cpp",
+    "main/main.cpp",
     "include/CHIPProjectConfig.h",
     "include/FreeRTOSConfig.h",
-    "main.cpp",
   ]
 
   output_dir = root_out_dir

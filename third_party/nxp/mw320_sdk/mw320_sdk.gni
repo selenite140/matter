@@ -85,6 +85,7 @@ template("mw320_sdk") {
       "${mw320_sdk_root}/middleware/lwip/src/include",
       "${mw320_sdk_root}/middleware/lwip/src/include/lwip",
       "${mw320_sdk_root}/middleware/lwip/src/include/lwip/apps",
+      "${mw320_sdk_root}/boards/rdmw320_r0/mbedtls_common/",
     ]
 
     defines = [
@@ -155,6 +156,7 @@ template("mw320_sdk") {
       "${mw320_sdk_root}/boards/rdmw320_r0/wifi_examples/mw_wifi_cli/lpm.c",
       "${mw320_sdk_root}/boards/rdmw320_r0/wifi_examples/mw_wifi_cli/network_flash_storage.c",
       "${mw320_sdk_root}/boards/rdmw320_r0/wifi_examples/mw_wifi_cli/pin_mux.c",
+      "${mw320_sdk_root}/boards/rdmw320_r0/mbedtls_common/sha224-256.c",
       "${mw320_sdk_root}/components/boot2_utils/boot_flags.c",
       "${mw320_sdk_root}/components/boot2_utils/crc32.c",
       "${mw320_sdk_root}/components/boot2_utils/keystore.c",

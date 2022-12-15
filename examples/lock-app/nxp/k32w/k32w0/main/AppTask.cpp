@@ -19,6 +19,7 @@
 #include "AppTask.h"
 #include "AppEvent.h"
 #include <app/server/Server.h>
+#include <app/server/OnboardingCodesUtil.h>
 #include <lib/support/ErrorStr.h>
 
 #include <DeviceInfoProviderImpl.h>
@@ -98,12 +99,10 @@ CHIP_ERROR AppTask::Init()
 // Initialize device attestation config
 #if CONFIG_CHIP_K32W0_REAL_FACTORY_DATA
     // Initialize factory data provider
-    ReturnErrorOnFailure(K32W0FactoryDataProvider::GetDefaultInstance().Init());
-#if CHIP_DEVICE_CONFIG_ENABLE_DEVICE_INSTANCE_INFO_PROVIDER
-    SetDeviceInstanceInfoProvider(&K32W0FactoryDataProvider::GetDefaultInstance());
-#endif
-    SetDeviceAttestationCredentialsProvider(&K32W0FactoryDataProvider::GetDefaultInstance());
-    SetCommissionableDataProvider(&K32W0FactoryDataProvider::GetDefaultInstance());
+    ReturnErrorOnFailure(AppTask::FactoryDataProvider::GetDefaultInstance().Init());
+    SetDeviceInstanceInfoProvider(&AppTask::FactoryDataProvider::GetDefaultInstance());
+    SetDeviceAttestationCredentialsProvider(&AppTask::FactoryDataProvider::GetDefaultInstance());
+    SetCommissionableDataProvider(&AppTask::FactoryDataProvider::GetDefaultInstance());
 #else
 #ifdef ENABLE_HSM_DEVICE_ATTESTATION
     SetDeviceAttestationCredentialsProvider(Examples::GetExampleSe05xDACProvider());
@@ -112,7 +111,7 @@ CHIP_ERROR AppTask::Init()
 #endif
 
     // QR code will be used with CHIP Tool
-    PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
+    AppTask::PrintOnboardingInfo();
 #endif
 
     /* HW init leds */
@@ -195,6 +194,21 @@ void AppTask::InitServer(intptr_t arg)
     nativeParams.openThreadInstancePtr = chip::DeviceLayer::ThreadStackMgrImpl().OTInstance();
     initParams.endpointNativeParams    = static_cast<void *>(&nativeParams);
     VerifyOrDie((chip::Server::GetInstance().Init(initParams)) == CHIP_NO_ERROR);
+}
+
+void AppTask::PrintOnboardingInfo()
+{
+    chip::PayloadContents payload;
+    CHIP_ERROR err = GetPayloadContents(
+        payload,
+        chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE)
+    );
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "GetPayloadContents() failed: %" CHIP_ERROR_FORMAT, err.Format());
+    }
+    payload.commissioningFlow = chip::CommissioningFlow::kUserActionRequired;
+    PrintOnboardingCodes(payload);
 }
 
 void AppTask::AppTaskMain(void * pvParameter)
@@ -762,12 +776,12 @@ void AppTask::UpdateClusterStateInternal(intptr_t arg)
 {
     uint8_t newValue = !BoltLockMgr().IsUnlocked();
 
-    // write the new on/off value
+    // write the new door lock state
     EmberAfStatus status =
-        emberAfWriteAttribute(1, ZCL_ON_OFF_CLUSTER_ID, ZCL_ON_OFF_ATTRIBUTE_ID, (uint8_t *) &newValue, ZCL_BOOLEAN_ATTRIBUTE_TYPE);
+        emberAfWriteAttribute(1, ZCL_DOOR_LOCK_CLUSTER_ID, ZCL_LOCK_STATE_ATTRIBUTE_ID, (uint8_t *) &newValue, ZCL_ENUM8_ATTRIBUTE_TYPE);
     if (status != EMBER_ZCL_STATUS_SUCCESS)
     {
-        ChipLogError(NotSpecified, "ERR: updating on/off %x", status);
+        ChipLogError(NotSpecified, "ERR: updating door lock state %x", status);
     }
 }
 
