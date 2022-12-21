@@ -84,6 +84,36 @@ uint8_t GetRandU8()
     return tmp;
 }
 
+#else
+
+uint64_t GetRandU64()
+{
+    uint64_t tmp = 0;
+    VerifyOrDie(CHIP_NO_ERROR == DRBG_get_bytes(reinterpret_cast<uint8_t *>(&tmp), sizeof(tmp)));
+    return tmp;
+}
+
+uint32_t GetRandU32()
+{
+    uint32_t tmp = 0;
+    VerifyOrDie(CHIP_NO_ERROR == DRBG_get_bytes(reinterpret_cast<uint8_t *>(&tmp), sizeof(tmp)));
+    return tmp;
+}
+
+uint16_t GetRandU16()
+{
+    uint16_t tmp = 0;
+    VerifyOrDie(CHIP_NO_ERROR == DRBG_get_bytes(reinterpret_cast<uint8_t *>(&tmp), sizeof(tmp)));
+    return tmp;
+}
+
+uint8_t GetRandU8()
+{
+    uint8_t tmp = 0;
+    VerifyOrDie(CHIP_NO_ERROR == DRBG_get_bytes(&tmp, sizeof(tmp)));
+    return tmp;
+}
+
 #endif //#ifdef ENABLE_HSM_RAND
 
 } // namespace Crypto
