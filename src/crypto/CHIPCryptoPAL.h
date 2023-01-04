@@ -465,6 +465,7 @@ public:
     /** Release resources associated with this key pair */
     void Clear();
 
+    uint64_t p256_handler = 0;
 private:
     P256PublicKey mPublicKey;
     mutable P256KeypairContext mKeypair;

@@ -76,6 +76,7 @@ source_set("public_headers") {
     "${chip_root}/src/lib/core",
     "${chip_root}/src/lib/support",
     "${nlassert_root}:nlassert",
+    "${chip_root}/third_party/libtrustymatter",
   ]
 }
 
