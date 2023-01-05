@@ -96,33 +96,22 @@ CHIP_ERROR TrustyDACProvider::GetFirmwareInformation(MutableByteSpan & out_firmw
     return CHIP_NO_ERROR;
 }
 
-CHIP_ERROR LoadKeypairFromRaw(ByteSpan private_key, ByteSpan public_key, Crypto::P256Keypair & keypair)
-{
-    Crypto::P256SerializedKeypair serialized_keypair;
-    ReturnErrorOnFailure(serialized_keypair.SetLength(private_key.size() + public_key.size()));
-    memcpy(serialized_keypair.Bytes(), public_key.data(), public_key.size());
-    memcpy(serialized_keypair.Bytes() + public_key.size(), private_key.data(), private_key.size());
-    return keypair.Deserialize(serialized_keypair);
-}
-
 CHIP_ERROR TrustyDACProvider::SignWithDeviceAttestationKey(const ByteSpan & message_to_sign,
                                                             MutableByteSpan & out_signature_buffer)
 {
-    //TODO the sign should happen in TA
-    //return CHIP_NO_ERROR;
-    Crypto::P256ECDSASignature signature;
-    Crypto::P256Keypair keypair;
+    int rc = 0;
+    size_t out_size = 0;
 
     VerifyOrReturnError(IsSpanUsable(out_signature_buffer), CHIP_ERROR_INVALID_ARGUMENT);
     VerifyOrReturnError(IsSpanUsable(message_to_sign), CHIP_ERROR_INVALID_ARGUMENT);
-    VerifyOrReturnError(out_signature_buffer.size() >= signature.Capacity(), CHIP_ERROR_BUFFER_TOO_SMALL);
 
-    // In a non-exemplary implementation, the public key is not needed here. It is used here merely because
-    // Crypto::P256Keypair is only (currently) constructable from raw keys if both private/public keys are present.
-    ReturnErrorOnFailure(LoadKeypairFromRaw(DevelopmentCerts::kDacPrivateKey, DevelopmentCerts::kDacPublicKey, keypair));
-    ReturnErrorOnFailure(keypair.ECDSA_sign_msg(message_to_sign.data(), message_to_sign.size(), signature));
-
-    return CopySpanToMutableSpan(ByteSpan{ signature.ConstBytes(), signature.Length() }, out_signature_buffer);
+    rc = trusty_matter.SignWithDACKey(message_to_sign.data(), message_to_sign.size(),
+                                     out_signature_buffer.data(), out_signature_buffer.size(), out_size);
+    if (rc == 0) {
+        out_signature_buffer.reduce_size(out_size);
+        return CHIP_NO_ERROR;
+    } else
+        return CHIP_ERROR_CERT_LOAD_FAILED;
 }
 
 } // namespace
